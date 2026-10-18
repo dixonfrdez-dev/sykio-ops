@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syklo-Tracker</title>
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1117">
+<link rel="icon" type="image/png" href="icon-192.png">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #121721;
+            --card-border: #1e2638;
+            --text-color: #e2e8f0;
+            --text-muted: #8492a6;
+            --accent-green: #00e676;
+            --accent-red: #ff5252;
+            --accent-orange: #ff9100;
+            --accent-purple: #b388ff;
+            --primary-blue: #2979ff;
+            --neon-blue: #38bdf8;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 14px;
+            padding-bottom: 95px;
+        }
+        
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .user-icon {
+            width: 30px; height: 30px; background: #1e293b; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 0.95rem; color: #94a3b8;
+        }
+        .date-btn {
+            background: rgba(41, 121, 255, 0.1); border: 1px solid rgba(41, 121, 255, 0.3);
+            color: var(--neon-blue); padding: 6px 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+        }
+        #input-fecha-calendario {
+            position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;
+        }
+
+        .neon-card {
+            background-color: var(--card-bg); border: 1px solid var(--card-border);
+            border-top: 2px solid var(--neon-blue); border-radius: 14px; padding: 16px;
+            margin-bottom: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); position: relative; overflow: hidden; cursor: pointer;
+        }
+
+        .ganancia-title {
+            font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; margin-bottom: 6px;
+        }
+        .val-usdc-main { font-size: 1.6rem; font-weight: 800; color: var(--accent-green); text-align: center; }
+        .val-ves-sub { font-size: 1rem; font-weight: 700; color: var(--text-color); text-align: center; margin-top: 2px; }
+
+        .progress-bar-container {
+            width: 100%; background-color: #1a2232; border-radius: 8px; height: 8px; margin-top: 12px; overflow: hidden; border: 1px solid var(--card-border);
+        }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #238636, #00e676); width: 0%; transition: width 0.4s ease; }
+        .progress-text { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+        .crypto-usd-container { display: flex; justify-content: space-around; align-items: center; margin-top: 6px; }
+        .crypto-item { text-align: center; }
+        .val-crypto-orange { font-size: 1.45rem; font-weight: 800; color: var(--accent-orange); }
+        .val-usd-purple { font-size: 1.45rem; font-weight: 800; color: var(--accent-purple); }
+        .label-unit { font-size: 0.9rem; font-weight: 700; margin-left: 2px; }
+
+        .meta-card-row {
+            background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .metrics-grid-2x3 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .metric-card-item {
+            background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 14px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; min-height: 70px;
+        }
+        .metric-title { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; z-index: 2; }
+        .metric-value { font-size: 1.15rem; font-weight: 800; color: #fff; z-index: 2; }
+        .metric-big-icon { position: absolute; right: -8px; bottom: -10px; font-size: 3.2rem; opacity: 0.12; z-index: 1; pointer-events: none; user-select: none; }
+
+        .btn-analisis {
+            background-color: var(--card-bg); border: 1px solid var(--card-border); border-top: 1px solid rgba(41, 121, 255, 0.4);
+            color: var(--neon-blue); width: 100%; padding: 13px; border-radius: 12px; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+
+        .fab {
+            position: fixed; bottom: 74px; right: 18px; background: linear-gradient(135deg, #2979ff, #00b0ff);
+            color: white; border: none; border-radius: 50%; width: 56px; height: 56px; font-size: 28px;
+            box-shadow: 0 6px 16px rgba(0, 176, 255, 0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 100;
+        }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; background-color: #0c1017; border-top: 1px solid var(--card-border);
+            display: flex; justify-content: space-around; padding: 8px 0 10px 0; z-index: 90;
+        }
+        .nav-item {
+            background: none; border: none; color: #64748b; font-size: 0.72rem; text-align: center; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+        }
+        .nav-item.active { color: var(--neon-blue); font-weight: 700; }
+        .nav-item span { font-size: 1.15rem; }
+
+        .filter-bar { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
+        .filter-bar input, .filter-bar select, .modal input, .modal select {
+            width: 100%; padding: 9px; background-color: var(--bg-color); border: 1px solid var(--card-border); border-radius: 8px; color: white; box-sizing: border-box; font-size: 0.85rem; margin-top: 4px;
+        }
+
+        .op-card-item {
+            background-color: #121722; border: 1px solid var(--card-border); border-radius: 14px; padding: 14px; margin-bottom: 12px; cursor: pointer; position: relative;
+        }
+        .op-card-item.type-venta { border-left: 4px solid var(--accent-red); }
+        .op-card-item.type-compra { border-left: 4px solid var(--accent-green); }
+
+        .avatar-circle {
+            width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; color: #fff;
+        }
+        .avatar-venta { background-color: rgba(255, 82, 82, 0.2); border: 1px solid var(--accent-red); color: var(--accent-red); }
+        .avatar-compra { background-color: rgba(0, 230, 118, 0.2); border: 1px solid var(--accent-green); color: var(--accent-green); }
+
+        .tag-tipo { font-size: 0.7rem; font-weight: 800; padding: 3px 10px; border-radius: 12px; letter-spacing: 0.5px; }
+        .tag-venta { background-color: rgba(255, 82, 82, 0.15); color: var(--accent-red); }
+        .tag-compra { background-color: rgba(0, 230, 118, 0.15); color: var(--accent-green); }
+
+        .op-grid-2x2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; margin-bottom: 8px; }
+        .op-grid-col-label { font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+        .op-grid-col-val { font-size: 1.05rem; font-weight: 800; color: #fff; margin-top: 2px; }
+
+        .ganancia-val-green { font-size: 1.05rem; font-weight: 800; color: var(--accent-green); margin-top: 2px; }
+        .ganancia-sub-usdc { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
+
+        .status-pill {
+            display: inline-flex; align-items: center; gap: 4px; background: rgba(0, 230, 118, 0.1); border: 1px solid rgba(0, 230, 118, 0.3);
+            color: var(--accent-green); padding: 3px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;
+        }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85); justify-content: center; align-items: flex-end; z-index: 1000;
+        }
+        .modal-content {
+            background-color: #121722; width: 100%; max-width: 500px; border-top-left-radius: 20px; border-top-right-radius: 20px;
+            padding: 20px; border-top: 1px solid var(--card-border); box-sizing: border-box; max-height: 90vh; overflow-y: auto;
+        }
+        .btn-modal-close {
+            background: #1e2638; border: none; color: #8492a6; width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 0.9rem; cursor: pointer;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #2979ff, #00b0ff); color: white; border: none; width: 100%; padding: 13px;
+            border-radius: 8px; font-weight: 700; font-size: 1rem; margin-top: 10px; cursor: pointer;
+        }
+        .btn-pegado {
+            background-color: #1a2232; border: 1px solid var(--card-border); color: #c9d1d9; width: 100%; padding: 12px;
+            border-radius: 8px; font-size: 0.9rem; margin-top: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+
+        #toast-aviso {
+            position: fixed; top: 15px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background-color: var(--accent-green); color: #000; padding: 10px 20px; border-radius: 30px;
+            font-size: 0.85rem; font-weight: 800; box-shadow: 0 4px 15px rgba(0,230,118,0.4); transition: transform 0.3s ease; z-index: 3000;
+        }
+        #toast-aviso.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA DE LOGIN -->
+    <div id="view-login" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 5000; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+        <div class="neon-card" style="width: 100%; max-width: 400px; padding: 24px; text-align: center; cursor: default;">
+            <h2 style="color: #38bdf8; font-weight: 700;">Syklo Tracker</h2>
+
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Dashboard de Operaciones</p>
+            
+            <div style="text-align: left; margin-bottom: 12px;">
+                <label style="font-size: 0.8rem; color: var(--text-muted);">Correo Electrónico</label>
+                <input type="email" id="login-email" placeholder="tu@correo.com" style="width: 100%; padding: 10px; background: var(--bg-color); border: 1px solid var(--card-border); border-radius: 8px; color: white; margin-top: 4px;">
+            </div>
+            <div style="text-align: left; margin-bottom: 20px;">
+                <label style="font-size: 0.8rem; color: var(--text-muted);">Contraseña</label>
+                <input type="password" id="login-password" placeholder="••••••••" style="width: 100%; padding: 10px; background: var(--bg-color); border: 1px solid var(--card-border); border-radius: 8px; color: white; margin-top: 4px;">
+            </div>
+            
+            <button type="button" class="btn-submit" onclick="iniciarSesion()">Entrar / Registrarse</button>
+        </div>
+    </div>
+
+    <div id="toast-aviso">✓ Operación guardada con éxito.</div>
+
+    <!-- VISTA 1: DASHBOARD -->
+    <div id="view-dashboard" class="view-section active">
+        <div class="top-header">
+            <div class="user-profile">
+                <div class="user-icon">👤</div>
+                <span id="header-user">DashSY User</span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="date" id="input-fecha-calendario" onchange="seleccionarFechaCalendario(this)">
+                <button type="button" class="date-btn" onclick="abrirCalendario()">📅 <span id="header-date">11/10/2026</span></button>
+                <button type="button" onclick="cerrarSesion()" style="background: rgba(255,82,82,0.1); border: 1px solid rgba(255,82,82,0.3); color: var(--accent-red); padding: 6px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; cursor: pointer;" title="Cerrar Sesión">🚪 Salir</button>
+            </div>
+        </div>
+
+        <div class="neon-card" onclick="abrirModalResumenGanancias()">
+            <div class="ganancia-title">📈 GANANCIA DEL DÍA</div>
+            <div class="val-usdc-main" id="dash-ganancia-dia-usdc">0.0000 <span style="font-size: 1.1rem;">USDC</span></div>
+            <div class="val-ves-sub" id="dash-ganancia-dia-ves">0.00 VES</div>
+            
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="meta-diaria-fill"></div>
+            </div>
+            <div class="progress-text">
+                <span id="meta-diaria-progreso">0.00 / 10.00 USDC (Meta Día)</span>
+                <span id="meta-diaria-pct">0%</span>
+            </div>
+            <div style="position: absolute; right: -5px; bottom: -10px; font-size: 4rem; opacity: 0.12; pointer-events: none;">🍀</div>
+        </div>
+
+        <div class="neon-card" style="padding: 14px;">
+            <div class="ganancia-title" style="margin-bottom: 8px;">💲 GANANCIAS CRIPTO/USD</div>
+            <div class="crypto-usd-container">
+                <div class="crypto-item">
+                    <span class="val-crypto-orange" id="dash-ganancia-cripto">0.00</span>
+                    <span class="val-crypto-orange label-unit">USDC</span>
+                </div>
+                <div class="crypto-item">
+                    <span class="val-usd-purple" id="dash-ganancia-usd">0.00</span>
+                    <span class="val-usd-purple label-unit">USD</span>
+                </div>
+            </div>
+            <div style="position: absolute; right: -5px; bottom: -10px; font-size: 4rem; opacity: 0.1; pointer-events: none;">🪙</div>
+        </div>
+
+        <div class="meta-card-row">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 1.5rem; background: rgba(41, 121, 255, 0.15); padding: 8px 12px; border-radius: 10px; color: var(--primary-blue);">🎯</div>
+                <div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">META OP (CRIPTO)</div>
+                    <div style="font-size: 0.9rem; font-weight: 700; margin-top: 1px;" id="txt-meta">0.00 / 1000.00 USDC</div>
+                </div>
+            </div>
+            <div style="background: #1e293b; padding: 5px 12px; border-radius: 12px; font-size: 0.78rem; font-weight: 700; color: #94a3b8;" id="txt-meta-pct">0%</div>
+        </div>
+
+        <div class="neon-card" style="padding: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="font-size: 1.4rem; background: rgba(0, 230, 118, 0.15); padding: 8px 11px; border-radius: 10px; color: var(--accent-green);">💵</div>
+                    <div>
+                        <div style="font-size: 0.95rem; font-weight: 700;">Capital Inicial</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted);">Saldo registrado del día</div>
+                    </div>
+                </div>
+                <button type="button" onclick="editarCapital()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); color: #e2e8f0; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.78rem; font-weight: 600;">✏️ Editar</button>
+            </div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin-left: 54px;" id="txt-capital">No hay capital registrado para hoy.</div>
+        </div>
+
+        <div class="metrics-grid-2x3">
+            <div class="metric-card-item">
+                <span class="metric-title">Prom. Compra</span>
+                <span class="metric-value" id="dash-prom-compra">0.00</span>
+                <span class="metric-big-icon" style="color: var(--accent-red);">📉</span>
+            </div>
+            <div class="metric-card-item">
+                <span class="metric-title">Prom. Venta</span>
+                <span class="metric-value" id="dash-prom-venta">0.00</span>
+                <span class="metric-big-icon" style="color: var(--accent-green);">📈</span>
+            </div>
+            <div class="metric-card-item">
+                <span class="metric-title">Brecha</span>
+                <span class="metric-value" id="dash-brecha">0.00%</span>
+                <span class="metric-big-icon" style="color: var(--accent-orange);">⚡</span>
+            </div>
+            <div class="metric-card-item">
+                <span class="metric-title">Operaciones</span>
+                <span class="metric-value" id="dash-total-ops">0</span>
+                <span class="metric-big-icon" style="color: var(--accent-purple);">📊</span>
+            </div>
+            <div class="metric-card-item">
+                <span class="metric-title">Lotes Activos</span>
+                <span class="metric-value" id="dash-lotes">0</span>
+                <span class="metric-big-icon" style="color: #94a3b8;">📦</span>
+            </div>
+            <div class="metric-card-item" onclick="abrirModalPendientes()" style="cursor: pointer;">
+                <span class="metric-title">Pendientes</span>
+                <span class="metric-value" id="dash-pendientes">0.00 USDC</span>
+                <span class="metric-big-icon" style="color: var(--neon-blue);">⏳</span>
+            </div>
+        </div>
+
+        <button type="button" class="btn-analisis" onclick="abrirAnalisisSemanal()">📊 Análisis Semanal VES</button>
+        <button type="button" class="btn-analisis" onclick="abrirAnalisisMensual()">📊 Análisis Mensual VES</button>
+    </div>
+
+    <!-- VISTA 2: RESUMEN VES -->
+    <div id="view-resumen" class="view-section">
+        <h3 style="margin-top: 0; font-size: 1.1rem; color: var(--neon-blue);">Operaciones VES del Día</h3>
+        
+        <div class="filter-bar">
+            <label>BUSCAR por usuario o referencia:</label>
+            <input type="text" id="busqueda-filtro" placeholder="Ej: @usuario o ref..." oninput="filtrarHistorial()">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+                <div>
+                    <label>OPERACIÓN:</label>
+                    <select id="filtro-tipo" onchange="filtrarHistorial()">
+                        <option value="Todas">Todas</option>
+                        <option value="COMPRA">COMPRA</option>
+                        <option value="VENTA">VENTA</option>
+                    </select>
+                </div>
+                <div>
+                    <label>MÉTODO:</label>
+                    <select id="filtro-metodo" onchange="filtrarHistorial()">
+                        <option value="Todos">Todos los Métodos</option>
+                        <option value="Pagomóvil">Pagomóvil</option>
+                        <option value="Banesco">Banesco</option>
+                        <option value="Venezuela">Venezuela</option>
+                        <option value="Bancamiga">Bancamiga</option>
+                        <option value="BNC">BNC</option>
+                        <option value="Bancaribe">Bancaribe</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="history-container"></div>
+    </div>
+
+    <!-- VISTA 3: OPERACIONES USD -->
+    <div id="view-usd" class="view-section">
+        <h3 style="margin-top: 0; font-size: 1.1rem; color: var(--neon-blue);">Operaciones USD</h3>
+        <div style="text-align: center; color: var(--text-muted); padding: 40px;">No hay operaciones en USD registradas.</div>
+    </div>
+
+    <!-- VISTA 4: RATINGS -->
+    <div id="view-ratings" class="view-section">
+        <h3 style="margin-top: 0; font-size: 1.1rem; color: var(--neon-blue);">Calificaciones de Contrapartes</h3>
+        <div id="ratings-container">
+            <div style="text-align: center; color: var(--text-muted); padding: 40px;">Sin calificaciones aún.</div>
+        </div>
+    </div>
+
+    <!-- VISTA 5: AJUSTES -->
+    <div id="view-ajustes" class="view-section">
+        <h3 style="margin-top: 0; font-size: 1.1rem; color: var(--neon-blue);">Ajustes</h3>
+        <div class="neon-card" style="text-align: left; padding: 15px; margin-bottom: 10px; cursor: default;">
+            <div style="font-weight: bold; margin-bottom: 5px;">Sincronización en la Nube</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">Tus datos se guardan y sincronizan automáticamente en tu cuenta.</div>
+        </div>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <button type="button" onclick="exportarDatosJSON()" style="background: #1e293b; border: 1px solid var(--card-border); color: var(--neon-blue); width: 50%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">📥 Exportar Backup</button>
+            <button type="button" onclick="document.getElementById('input-importar').click()" style="background: #1e293b; border: 1px solid var(--card-border); color: var(--accent-green); width: 50%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">📤 Importar Backup</button>
+            <input type="file" id="input-importar" style="display:none" accept=".json" onchange="importarDatosJSON(event)">
+        </div>
+
+        <button type="button" onclick="borrarTodo()" style="background: var(--accent-red); color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">🗑️ Restablecer Todos los Datos</button>
+    </div>
+
+    <!-- BOTÓN (+) FLOTANTE -->
+    <button type="button" class="fab" onclick="abrirModalNuevaOp()">+</button>
+
+    <!-- BARRA INFERIOR -->
+    <div class="bottom-nav">
+        <button type="button" class="nav-item active" onclick="cambiarVista('dashboard', this)"><span>📊</span>Dashboard</button>
+        <button type="button" class="nav-item" onclick="cambiarVista('resumen', this)"><span>📋</span>Resumen VES</button>
+        <button type="button" class="nav-item" onclick="cambiarVista('usd', this)"><span>💵</span>Operaciones USD</button>
+        <button type="button" class="nav-item" onclick="cambiarVista('ratings', this)"><span>⭐</span>Ratings</button>
+        <button type="button" class="nav-item" onclick="cambiarVista('ajustes', this)"><span>⚙️</span>Ajustes</button>
+    </div>
+
+    <!-- MODAL NUEVA / EDITAR OPERACIÓN -->
+    <div class="modal" id="modal-op">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 id="modal-titulo-op" style="margin: 0; color: #fff; font-size: 1.1rem;">Nueva Operación</h3>
+                <button type="button" onclick="toggleModal(false)" class="btn-modal-close">✕</button>
+            </div>
+
+            <input type="hidden" id="input-edit-id" value="">
+
+            <div class="form-group" style="margin-top: 8px;">
+                <label>Fecha de la Operación</label>
+                <input type="date" id="input-fecha-op">
+            </div>
+
+            <div class="form-group" style="margin-top: 8px;">
+                <label>Usuario</label>
+                <input type="text" id="input-usuario" placeholder="Ej: @usuario">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="form-group">
+                    <label>Nro de Referencia</label>
+                    <input type="text" id="input-ref" placeholder="Nº de referencia">
+                </div>
+                <div class="form-group">
+                    <label>Estatus</label>
+                    <select id="input-estatus">
+                        <option value="Completado">Completado</option>
+                        <option value="En Curso">En Curso</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+                <div class="form-group">
+                    <label>Operación</label>
+                    <select id="input-tipo" onchange="calcularTotalesModal()">
+                        <option value="COMPRA">Compra</option>
+                        <option value="VENTA">Venta</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Método</label>
+                    <select id="input-metodo" onchange="calcularTotalesModal()">
+                        <option value="Pagomóvil">Pagomóvil</option>
+                        <option value="Banesco">Banesco</option>
+                        <option value="Venezuela">Venezuela</option>
+                        <option value="Bancamiga">Bancamiga</option>
+                        <option value="BNC">BNC</option>
+                        <option value="Bancaribe">Bancaribe</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Plataforma P2P</label>
+                    <select id="input-plataforma">
+                        <option value="DashSY">DashSY</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="form-group">
+                    <label>Tasa de Cambio</label>
+                    <input type="number" id="input-tasa" step="0.000001" placeholder="Ej: 1100" oninput="alCambiarTasaOUSDC()">
+                </div>
+                <div class="form-group">
+                    <label>Monto Cripto (USDC)</label>
+                    <input type="number" id="input-monto" step="0.001" placeholder="Ej: 25.08" oninput="alCambiarTasaOUSDC()">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label style="color: var(--accent-orange);">Monto Exacto VES (Opcional)</label>
+                <input type="number" id="input-monto-ves-manual" step="0.01" placeholder="Ej: 27582.75" oninput="alCambiarMontoVESManual()">
+            </div>
+
+            <div class="form-group">
+                <label>Comisión Cripto (USDC)</label>
+                <input type="number" id="input-comision-cripto" step="0.01" value="0.00" oninput="calcularTotalesModal()">
+            </div>
+
+            <div style="background: #0b0e14; border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="color: var(--text-muted);">• Monto BS:</span>
+                    <span id="modal-monto-bs" style="font-weight: bold;">0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="color: var(--text-muted);">• Comisión Bancaria:</span>
+                    <span id="modal-comision" style="font-weight: bold;">0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="color: var(--text-muted);">• Comisión Cripto:</span>
+                    <span id="modal-comision-cripto-txt" style="font-weight: bold;">0.00 USDC</span>
+                </div>
+                <hr style="border-color: var(--card-border); margin: 6px 0;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--neon-blue); font-weight: bold;">⊙ Total a Debitar:</span>
+                    <span id="modal-total" style="font-weight: bold; color: var(--neon-blue);">0.00</span>
+                </div>
+            </div>
+
+            <button type="button" class="btn-pegado" onclick="ejecutarPegadoEspecial()">📋 Pegado Especial</button>
+            <button type="button" class="btn-submit" onclick="guardarOperacion()">Guardar</button>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAR MOVIMIENTO (SUBIR / BAJAR) -->
+    <div class="modal" id="modal-mover-op">
+        <div class="modal-content" style="text-align: center;">
+            <h3 style="color: #fff; margin-top: 0; font-size: 1.1rem;">Confirmar Movimiento</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">¿Estás seguro de que quieres cambiar el orden de esta operación?</p>
+            <input type="hidden" id="mover-id-op" value="">
+            <input type="hidden" id="mover-dir-op" value="">
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="cerrarModalMover()" style="background: #1e2638; border: 1px solid var(--card-border); color: #fff; width: 50%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">Cancelar</button>
+                <button type="button" onclick="ejecutarMovimientoOp()" style="background: var(--accent-orange); border: none; color: #000; width: 50%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">Sí, Mover</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE DE OPERACIÓN -->
+    <div class="modal" id="modal-detalle-op">
+        <div class="modal-content" id="contenido-detalle-op"></div>
+    </div>
+
+    <!-- MODAL RESUMEN GANANCIAS -->
+    <div class="modal" id="modal-resumen-ganancias">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--accent-green); font-size: 1.1rem;">📈</span>
+                    <h3 style="margin: 0; color: #fff; font-size: 1.1rem; font-weight: 700;">Resumen de Ganancias</h3>
+                </div>
+                <button type="button" onclick="cerrarModalResumenGanancias()" class="btn-modal-close">✕</button>
+            </div>
+
+            <div class="neon-card" style="margin-bottom: 12px; cursor: default; padding: 14px; text-align: center;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; margin-bottom: 6px;">🔆 HOY</div>
+                <div style="font-size: 1.45rem; font-weight: 800; color: var(--accent-green);" id="res-ganancia-hoy-ves">0.00 VES</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;" id="res-ganancia-hoy-usdc">0.0000 USDC</div>
+            </div>
+
+            <div class="neon-card" style="margin-bottom: 12px; cursor: default; padding: 14px; text-align: center;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; margin-bottom: 6px;">📅 ESTA SEMANA</div>
+                <div style="font-size: 1.45rem; font-weight: 800; color: var(--accent-green);" id="res-ganancia-sem-ves">0.00 VES</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;" id="res-ganancia-sem-usdc">0.0000 USDC</div>
+            </div>
+
+            <div class="neon-card" style="margin-bottom: 4px; cursor: default; padding: 14px; text-align: center;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; margin-bottom: 6px;">📺 ESTE MES</div>
+                <div style="font-size: 1.45rem; font-weight: 800; color: var(--accent-green);" id="res-ganancia-mes-ves">0.00 VES</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;" id="res-ganancia-mes-usdc">0.0000 USDC</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ANÁLISIS SEMANAL -->
+    <div class="modal" id="modal-analisis-semanal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: var(--neon-blue); font-size: 1.1rem;">📊 Análisis Semanal VES</h3>
+                <button type="button" onclick="document.getElementById('modal-analisis-semanal').style.display='none'" class="btn-modal-close">✕</button>
+            </div>
+            <div id="contenido-analisis-semanal" style="font-size: 0.9rem; color: var(--text-color);">Cargando...</div>
+        </div>
+    </div>
+
+    <!-- MODAL ANÁLISIS MENSUAL -->
+    <div class="modal" id="modal-analisis-mensual">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: var(--neon-blue); font-size: 1.1rem;">📊 Análisis Mensual VES</h3>
+                <button type="button" onclick="document.getElementById('modal-analisis-mensual').style.display='none'" class="btn-modal-close">✕</button>
+            </div>
+            <div id="contenido-analisis-mensual" style="font-size: 0.9rem; color: var(--text-color);">Cargando...</div>
+        </div>
+    </div>
+
+    <!-- MODAL PENDIENTES -->
+    <div class="modal" id="modal-pendientes">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: var(--neon-blue); font-size: 1.1rem;">⏱️ Detalles de Pendientes</h3>
+                <button type="button" onclick="cerrarModalPendientes()" class="btn-modal-close">✕</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <div class="neon-card" style="text-align: center; border-color: var(--accent-green); cursor: default;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">📥 RECOMPRA (DEUDA)</div>
+                    <div id="pend-recompra-monto" style="font-size: 1rem; font-weight: bold; color: var(--accent-green); margin-top: 4px;">0.00 USDC</div>
+                </div>
+                <div class="neon-card" style="text-align: center; border-color: var(--accent-red); cursor: default;">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">📤 REVENTA (STOCK)</div>
+                    <div id="pend-reventa-monto" style="font-size: 1rem; font-weight: bold; color: var(--accent-red); margin-top: 4px;">0.00 USDC</div>
+                </div>
+            </div>
+
+            <div style="font-size: 0.85rem; font-weight: bold; color: var(--text-muted); margin-bottom: 6px;">Operaciones de Recompra</div>
+            <div id="lista-recompra-pendientes" style="background: #0b0e14; border: 1px solid var(--card-border); border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 0.8rem; max-height: 120px; overflow-y: auto;">No hay recompra pendiente.</div>
+
+            <div style="font-size: 0.85rem; font-weight: bold; color: var(--text-muted); margin-bottom: 6px;">Operaciones de Reventa</div>
+            <div id="lista-reventa-pendientes" style="background: #0b0e14; border: 1px solid var(--card-border); border-radius: 8px; padding: 10px; font-size: 0.8rem; max-height: 120px; overflow-y: auto;">No hay reventa pendiente.</div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBcL9gc3qDnhFjC7Lru5fQK3YbdMZ4vixI",
+            authDomain: "syklotracker.firebaseapp.com",
+            projectId: "syklotracker",
+            storageBucket: "syklotracker.firebasestorage.app",
+            messagingSenderId: "496746853538",
+            appId: "1:496746853538:web:c7a5d53e9058a5c74653fb"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let usuarioActualId = null;
+        let operaciones = [];
+        let lotes = [];
+        let capitalInicial = 0;
+        let fechaActualStr = new Date().toISOString().split('T')[0];
+        let metaDiariaUSDC = 10.0;
+
+        auth.onAuthStateChanged((user) => {
+            const loginDiv = document.getElementById('view-login');
+            const headerUser = document.getElementById('header-user');
+            if (user) {
+                usuarioActualId = user.uid;
+                if (headerUser) headerUser.innerText = user.email.split('@')[0];
+                if (loginDiv) loginDiv.style.display = 'none';
+                cargarDatosNube();
+            } else {
+                usuarioActualId = null;
+                operaciones = [];
+                capitalInicial = 0;
+                if (loginDiv) loginDiv.style.display = 'flex';
+            }
+        });
+
+        function iniciarSesion() {
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
+
+            if (!email || !pass) {
+                alert("Ingresa correo y contraseña.");
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, pass)
+                .catch((error) => {
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
+                        return auth.createUserWithEmailAndPassword(email, pass);
+                    }
+                    throw error;
+                })
+                .catch((err) => {
+                    alert("Error de autenticación: " + err.message);
+                });
+        }
+
+        function cerrarSesion() {
+            auth.signOut().then(() => {
+                location.reload();
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            try {
+                actualizarTextoFechaHeader();
+            } catch (e) {
+                console.error("Error al iniciar:", e);
+            }
+        });
+
+        function cambiarVista(vista, elemento) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            const vistaEl = document.getElementById('view-' + vista);
+            if (vistaEl) vistaEl.classList.add('active');
+            
+            if (elemento) {
+                elemento.classList.add('active');
+            }
+        }
+
+        function abrirModalNuevaOp() {
+            document.getElementById('modal-titulo-op').innerText = "Nueva Operación";
+            document.getElementById('input-edit-id').value = "";
+            document.getElementById('input-fecha-op').value = fechaActualStr;
+            document.getElementById('input-usuario').value = "";
+            document.getElementById('input-ref').value = "";
+            document.getElementById('input-monto').value = "";
+            document.getElementById('input-tasa').value = "";
+            document.getElementById('input-monto-ves-manual').value = "";
+            document.getElementById('input-comision-cripto').value = "0.00";
+            toggleModal(true);
+        }
+
+        function toggleModal(mostrar) {
+            const modal = document.getElementById('modal-op');
+            if (modal) {
+                modal.style.display = mostrar ? 'flex' : 'none';
+                if (mostrar) calcularTotalesModal();
+            }
+        }
+
+        function abrirModalResumenGanancias() {
+            const modal = document.getElementById('modal-resumen-ganancias');
+            if (modal) {
+                modal.style.display = 'flex';
+                actualizarCalculosResumenGanancias();
+            }
+        }
+
+        function cerrarModalResumenGanancias() {
+            const modal = document.getElementById('modal-resumen-ganancias');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function abrirModalPendientes() {
+            const modal = document.getElementById('modal-pendientes');
+            if (modal) {
+                modal.style.display = 'flex';
+                actualizarContenidoPendientes();
+            }
+        }
+
+        function cerrarModalPendientes() {
+            const modal = document.getElementById('modal-pendientes');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function abrirAnalisisSemanal() {
+            const fechaRef = new Date(fechaActualStr + 'T00:00:00');
+            const inicioSemana = new Date(fechaRef);
+            inicioSemana.setDate(fechaRef.getDate() - 6);
+
+            const opsSemana = operaciones.filter(op => {
+                if(!op.fecha) return false;
+                const dOp = new Date(op.fecha + 'T00:00:00');
+                return dOp >= inicioSemana && dOp <= fechaRef;
+            });
+
+            const ventasSemana = opsSemana.filter(op => (op.tipo || '').toUpperCase() === 'VENTA');
+            const totalVes = ventasSemana.reduce((acc, op) => acc + (op.gananciaVes || 0), 0);
+            const totalUsdc = ventasSemana.reduce((acc, op) => acc + (op.gananciaCripto || 0), 0);
+
+            const contenido = document.getElementById('contenido-analisis-semanal');
+            if (contenido) {
+                contenido.innerHTML = `
+                    <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 14px; text-align: center; margin-bottom: 12px;">
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">ÚLTIMOS 7 DÍAS</div>
+                        <div style="font-size:1.3rem; font-weight:bold; color:var(--accent-green);">${totalVes.toFixed(2)} VES</div>
+                        <div style="font-size:0.85rem; color:var(--text-muted); margin-top:2px;">≈ ${totalUsdc.toFixed(4)} USDC</div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">Total de operaciones en el periodo: <b>${opsSemana.length}</b></div>
+                `;
+            }
+            const modal = document.getElementById('modal-analisis-semanal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function abrirAnalisisMensual() {
+            const [yRef, mRef] = fechaActualStr.split('-');
+            const opsMes = operaciones.filter(op => {
+                if(!op.fecha) return false;
+                const [yOp, mOp] = op.fecha.split('-');
+                return yOp === yRef && mOp === mRef;
+            });
+
+            const ventasMes = opsMes.filter(op => (op.tipo || '').toUpperCase() === 'VENTA');
+            const totalVes = ventasMes.reduce((acc, op) => acc + (op.gananciaVes || 0), 0);
+            const totalUsdc = ventasMes.reduce((acc, op) => acc + (op.gananciaCripto || 0), 0);
+
+            const contenido = document.getElementById('contenido-analisis-mensual');
+            if (contenido) {
+                contenido.innerHTML = `
+                    <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 14px; text-align: center; margin-bottom: 12px;">
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">MES ${mRef}/${yRef}</div>
+                        <div style="font-size:1.3rem; font-weight:bold; color:var(--accent-green);">${totalVes.toFixed(2)} VES</div>
+                        <div style="font-size:0.85rem; color:var(--text-muted); margin-top:2px;">≈ ${totalUsdc.toFixed(4)} USDC</div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">Total de operaciones en el mes: <b>${opsMes.length}</b></div>
+                `;
+            }
+            const modal = document.getElementById('modal-analisis-mensual');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function abrirCalendario() {
+            const inputDate = document.getElementById('input-fecha-calendario');
+            if (inputDate) {
+                inputDate.value = fechaActualStr;
+                if (typeof inputDate.showPicker === 'function') {
+                    try {
+                        inputDate.showPicker();
+                        return;
+                    } catch (e) {}
+                }
+                inputDate.click();
+            }
+        }
+
+        function seleccionarFechaCalendario(el) {
+            if(el && el.value) {
+                fechaActualStr = el.value;
+                actualizarTextoFechaHeader();
+                actualizarDashboard();
+            }
+        }
+
+        function actualizarTextoFechaHeader() {
+            const headerDate = document.getElementById('header-date');
+            const inputDate = document.getElementById('input-fecha-calendario');
+            if (inputDate) inputDate.value = fechaActualStr;
+            if (headerDate) {
+                const [y, m, d] = fechaActualStr.split('-');
+                headerDate.innerText = `${d}/${m}/${y}`;
+            }
+        }
+
+        function editarCapital() {
+            let cap = prompt("Ingresa el Capital Inicial registrado del día:", capitalInicial);
+            if (cap !== null) {
+                capitalInicial = parseFloat(cap) || 0;
+                const txtCapital = document.getElementById('txt-capital');
+                if (txtCapital) {
+                    txtCapital.innerText = capitalInicial > 0 ? capitalInicial + " VES registrado" : "No hay capital registrado para hoy.";
+                }
+                guardarDatos();
+            }
+        }
+
+        function mostrarToast(mensaje = "✓ Operación guardada con éxito.") {
+            const toast = document.getElementById('toast-aviso');
+            if (toast) {
+                toast.innerText = mensaje;
+                toast.classList.add('show');
+                setTimeout(() => { toast.classList.remove('show'); }, 2500);
+            }
+        }
+
+        function esPagoMovil(metodoStr) {
+            if(!metodoStr) return false;
+            const m = metodoStr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return m.includes("pagomovil") || m.includes("pago movil");
+        }
+
+        function calcularComisionBancaria(tipoOp, metodoOp, montoBsVal) {
+            let comision = 0.0;
+            if (tipoOp === 'COMPRA' && esPagoMovil(metodoOp)) {
+                let calculoPorcentaje = montoBsVal * 0.003;
+                comision = Math.max(14.0, calculoPorcentaje);
+            }
+            return comision;
+        }
+
+        function alCambiarMontoVESManual() {
+            const montoVesManual = parseFloat(document.getElementById('input-monto-ves-manual').value) || 0;
+            const montoUSDC = parseFloat(document.getElementById('input-monto').value) || 0;
+
+            if (montoVesManual > 0 && montoUSDC > 0) {
+                const tasaCalc = montoVesManual / montoUSDC;
+                const inputTasa = document.getElementById('input-tasa');
+                if(inputTasa) inputTasa.value = tasaCalc.toFixed(6);
+            }
+            calcularTotalesModal();
+        }
+
+        function alCambiarTasaOUSDC() {
+            let tasa = parseFloat(document.getElementById('input-tasa').value) || 0;
+            const montoUSDC = parseFloat(document.getElementById('input-monto').value) || 0;
+            if (tasa > 0 && montoUSDC > 0) {
+                const inputVes = document.getElementById('input-monto-ves-manual');
+                if(inputVes) inputVes.value = (tasa * montoUSDC).toFixed(2);
+            }
+            calcularTotalesModal();
+        }
+
+        function calcularTotalesModal() {
+            const monto = parseFloat(document.getElementById('input-monto').value) || 0;
+            let tasa = parseFloat(document.getElementById('input-tasa').value) || 0;
+            const comisionCripto = parseFloat(document.getElementById('input-comision-cripto').value) || 0;
+            const tipo = document.getElementById('input-tipo').value.toUpperCase();
+            const metodo = document.getElementById('input-metodo').value;
+            
+            const montoEfectivoCripto = monto - comisionCripto;
+            
+            let montoBs = 0;
+            const vesManual = parseFloat(document.getElementById('input-monto-ves-manual').value) || 0;
+            if (vesManual > 0) {
+                montoBs = vesManual;
+            } else {
+                montoBs = montoEfectivoCripto * tasa;
+            }
+            
+            let comisionBancaria = calcularComisionBancaria(tipo, metodo, montoBs);
+            
+            let total = montoBs;
+            if (tipo === 'COMPRA' && esPagoMovil(metodo)) {
+                total = montoBs + comisionBancaria;
+            }
+
+            document.getElementById('modal-monto-bs').innerText = montoBs.toFixed(2);
+            document.getElementById('modal-comision').innerText = comisionBancaria.toFixed(2);
+            document.getElementById('modal-comision-cripto-txt').innerText = comisionCripto.toFixed(2) + " USDC";
+            document.getElementById('modal-total').innerText = total.toFixed(2);
+        }
+
+        async function ejecutarPegadoEspecial() {
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    const texto = await navigator.clipboard.readText();
+                    if (texto && texto.trim() !== "") {
+                        procesarTextoInteligente(texto);
+                        mostrarToast("✓ Pegado especial exitoso.");
+                        return;
+                    } else {
+                        alert("El portapapeles está vacío.");
+                    }
+                } else {
+                    alert("Tu navegador no soporta el pegado automático directo.");
+                }
+            } catch (err) {
+                console.error("Error al leer el portapapeles:", err);
+                alert("Por favor, otorga permisos de acceso al portapapeles en tu navegador.");
+            }
+        }
+
+        function procesarTextoInteligente(texto) {
+            const textoLower = texto.toLowerCase();
+            let esCompra = true;
+
+            if (textoLower.includes('has vendido') || textoLower.includes('vendido') || textoLower.includes('venta')) {
+                esCompra = false;
+            } else if (textoLower.includes('has comprado') || textoLower.includes('comprado') || textoLower.includes('compra')) {
+                esCompra = true;
+            }
+            document.getElementById('input-tipo').value = esCompra ? 'COMPRA' : 'VENTA';
+
+            let usuarioEncontrado = "";
+            const matchContraparte = texto.match(/Contraparte:\s*([^\n\r]+)/i);
+            if (matchContraparte) {
+                usuarioEncontrado = matchContraparte[1].replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+            }
+            if (usuarioEncontrado) {
+                document.getElementById('input-usuario').value = usuarioEncontrado;
+            }
+
+            const matchRef = texto.match(/([a-f0-9]{8}|[A-Z0-9]{6,12})/i);
+            if (matchRef) {
+                document.getElementById('input-ref').value = matchRef[1];
+            }
+
+            let montoUSDC = 0;
+            const matchRecibidoUSDCVal = texto.match(/monto recibido:\s*(\d+([.,]\d+)?)\s*USDC/i);
+            const matchEnviadoUSDCVal = texto.match(/monto enviado:\s*(\d+([.,]\d+)?)\s*USDC/i);
+            const matchUSDCGeneral = texto.match(/(\d+([.,]\d+)?)\s*USDC/i);
+
+            if (matchRecibidoUSDCVal) {
+                montoUSDC = parseFloat(matchRecibidoUSDCVal[1].replace(',', '.'));
+            } else if (matchEnviadoUSDCVal) {
+                montoUSDC = parseFloat(matchEnviadoUSDCVal[1].replace(',', '.'));
+            } else if (matchUSDCGeneral) {
+                montoUSDC = parseFloat(matchUSDCGeneral[1].replace(',', '.'));
+            }
+            
+            if (montoUSDC > 0) {
+                document.getElementById('input-monto').value = montoUSDC;
+            }
+
+            const matchPrecio = texto.match(/precio:\s*([\d\.,]+)\s*VES/i);
+            if (matchPrecio) {
+                let precioExtraido = parseFloat(matchPrecio[1].replace(/\./g, '').replace(',', '.'));
+                document.getElementById('input-tasa').value = precioExtraido.toFixed(2);
+            }
+
+            let montoBsExtraido = 0;
+            const matchRecibidoVES = texto.match(/monto recibido:\s*([\d\.,]+)\s*VES/i);
+            const matchEnviadoVES = texto.match(/monto enviado:\s*([\d\.,]+)\s*VES/i);
+            if (matchRecibidoVES) {
+                montoBsExtraido = parseFloat(matchRecibidoVES[1].replace(/\./g, '').replace(',', '.'));
+            } else if (matchEnviadoVES) {
+                montoBsExtraido = parseFloat(matchEnviadoVES[1].replace(/\./g, '').replace(',', '.'));
+            }
+
+            if (montoBsExtraido > 0) {
+                document.getElementById('input-monto-ves-manual').value = montoBsExtraido.toFixed(2);
+            }
+
+            calcularTotalesModal();
+        }
+
+        function guardarOperacion() {
+            try {
+                const editId = document.getElementById('input-edit-id').value;
+                const fechaOp = document.getElementById('input-fecha-op').value || fechaActualStr;
+                const usuario = document.getElementById('input-usuario').value.trim() || 'N/A';
+                const referencia = document.getElementById('input-ref').value.trim() || 'N/A';
+                const estatus = document.getElementById('input-estatus').value;
+                const tipo = document.getElementById('input-tipo').value.toUpperCase();
+                const metodo = document.getElementById('input-metodo').value;
+                
+                const monto = parseFloat(document.getElementById('input-monto').value) || 0;
+                const comisionCripto = parseFloat(document.getElementById('input-comision-cripto').value) || 0;
+                let vesManual = parseFloat(document.getElementById('input-monto-ves-manual').value) || 0;
+                let tasa = parseFloat(document.getElementById('input-tasa').value) || 0;
+
+                if (monto <= 0) {
+                    alert("⚠️ Ingresa un Monto Cripto válido mayor a 0.");
+                    return;
+                }
+
+                if (tasa <= 0 && vesManual > 0) {
+                    tasa = vesManual / monto;
+                }
+                if (vesManual <= 0 && tasa > 0) {
+                    vesManual = monto * tasa;
+                }
+                if (vesManual <= 0) {
+                    vesManual = monto * (tasa > 0 ? tasa : 1);
+                }
+
+                let totalBsFinal = 0;
+                if (tipo === 'COMPRA' && esPagoMovil(metodo)) {
+                    let comisionBancaria = calcularComisionBancaria(tipo, metodo, vesManual);
+                    totalBsFinal = vesManual + comisionBancaria;
+                } else {
+                    totalBsFinal = vesManual;
+                }
+
+                if (editId) {
+                    const index = operaciones.findIndex(o => o.id == editId);
+                    if (index !== -1) {
+                        operaciones[index].fecha = fechaOp;
+                        operaciones[index].usuario = usuario;
+                        operaciones[index].referencia = referencia;
+                        operaciones[index].estatus = estatus;
+                        operaciones[index].tipo = tipo;
+                        operaciones[index].metodo = metodo;
+                        operaciones[index].monto = monto;
+                        operaciones[index].tasa = tasa > 0 ? tasa : 1;
+                        operaciones[index].comisionCripto = comisionCripto;
+                        operaciones[index].montoBs = totalBsFinal;
+                    }
+                } else {
+                    const nuevaOp = {
+                        id: Date.now(),
+                        usuario, 
+                        referencia, 
+                        estatus, 
+                        tipo, 
+                        metodo, 
+                        monto, 
+                        tasa: tasa > 0 ? tasa : 1, 
+                        comisionCripto, 
+                        montoBs: totalBsFinal,
+                        fecha: fechaOp
+                    };
+                    operaciones.unshift(nuevaOp);
+                }
+
+                recalcularLotesMotor();
+                guardarDatos();
+                actualizarDashboard();
+                toggleModal(false);
+                
+                const modalDetalle = document.getElementById('modal-detalle-op');
+                if (modalDetalle) modalDetalle.style.display = 'none';
+                
+                mostrarToast("✓ Operación guardada con éxito.");
+            } catch (err) {
+                console.error("Error al guardar:", err);
+                alert("Error al guardar: " + err.message);
+            }
+        }
+
+        function editarOp(id) {
+            const op = operaciones.find(o => o.id === id);
+            if(!op) return;
+
+            document.getElementById('modal-titulo-op').innerText = "Editar Operación";
+            document.getElementById('input-edit-id').value = op.id;
+            document.getElementById('input-fecha-op').value = op.fecha || fechaActualStr;
+            document.getElementById('input-usuario').value = op.usuario;
+            document.getElementById('input-ref').value = op.referencia;
+            document.getElementById('input-estatus').value = op.estatus;
+            document.getElementById('input-tipo').value = (op.tipo || 'COMPRA').toUpperCase();
+            document.getElementById('input-metodo').value = op.metodo || 'Pagomóvil';
+            document.getElementById('input-monto').value = op.monto;
+            document.getElementById('input-tasa').value = op.tasa;
+            document.getElementById('input-monto-ves-manual').value = op.montoBs.toFixed(2);
+            document.getElementById('input-comision-cripto').value = op.comisionCripto || 0;
+
+            document.getElementById('modal-detalle-op').style.display = 'none';
+            toggleModal(true);
+        }
+
+        function pedirConfirmacionMover(id, direccion) {
+            document.getElementById('mover-id-op').value = id;
+            document.getElementById('mover-dir-op').value = direccion;
+            document.getElementById('modal-mover-op').style.display = 'flex';
+        }
+
+        function cerrarModalMover() {
+            document.getElementById('modal-mover-op').style.display = 'none';
+        }
+
+        function ejecutarMovimientoOp() {
+            const id = parseInt(document.getElementById('mover-id-op').value);
+            const direccion = document.getElementById('mover-dir-op').value;
+            cerrarModalMover();
+
+            const index = operaciones.findIndex(o => o.id === id);
+            if (index === -1) return;
+
+            if (direccion === 'arriba' && index > 0) {
+                const temp = operaciones[index];
+                operaciones[index] = operaciones[index - 1];
+                operaciones[index - 1] = temp;
+            } else if (direccion === 'abajo' && index < operaciones.length - 1) {
+                const temp = operaciones[index];
+                operaciones[index] = operaciones[index + 1];
+                operaciones[index + 1] = temp;
+            }
+
+            recalcularLotesMotor();
+            guardarDatos();
+            actualizarDashboard();
+            mostrarToast("✓ Orden actualizado. Recalculando...");
+        }
+        
+        function recalcularLotesMotor() {
+            let lotesActivos = [];
+            let contadorLote = 1;
+            
+            operaciones.forEach(op => {
+                op.gananciaVes = 0;
+                op.gananciaCripto = 0;
+                op.loteTag = '';
+                op.loteObj = null;
+                op.lotesConsumidos = [];
+            });
+
+            const opsCronologico = [...operaciones].reverse();
+
+            opsCronologico.forEach(op => {
+                const tipoUpper = (op.tipo || '').toUpperCase();
+                if (tipoUpper === 'VENTA') {
+                    const nuevoLote = {
+                        idTag: 'L' + contadorLote,
+                        tasaVenta: op.tasa,
+                        montoInicial: op.monto,
+                        montoRestante: op.monto,
+                        estado: 'ABIERTO',
+                        fecha: op.fecha,
+                        operacionVentaRef: op,
+                        consumos: []
+                    };
+                    contadorLote++;
+                    lotesActivos.push(nuevoLote);
+                    op.loteObj = nuevoLote;
+                    op.loteTag = nuevoLote.idTag;
+                } else if (tipoUpper === 'COMPRA') {
+                    let montoPorCubrir = op.monto;
+                    let descLotes = [];
+                    let consumosCompra = [];
+
+                    for (let lote of lotesActivos) {
+                        if (lote.estado === 'ABIERTO' && montoPorCubrir > 0) {
+                            let asignado = Math.min(lote.montoRestante, montoPorCubrir);
+                            let difTasa = lote.tasaVenta - op.tasa;
+                            let gVes = difTasa * asignado;
+                            let gUsdc = gVes / lote.tasaVenta;
+
+                            if (lote.operacionVentaRef) {
+                                lote.operacionVentaRef.gananciaVes = (lote.operacionVentaRef.gananciaVes || 0) + gVes;
+                                lote.operacionVentaRef.gananciaCripto = (lote.operacionVentaRef.gananciaCripto || 0) + gUsdc;
+                            }
+
+                            lote.montoRestante -= asignado;
+                            montoPorCubrir -= asignado;
+
+                            descLotes.push(`${lote.idTag}(${asignado.toFixed(2)})`);
+                            consumosCompra.push({ loteTag: lote.idTag, monto: asignado });
+                            lote.consumos.push({ 
+                                usuarioCompra: op.usuario, 
+                                monto: asignado, 
+                                fecha: op.fecha 
+                            });
+
+                            if (lote.montoRestante <= 0.0001) {
+                                lote.estado = 'CERRADO';
+                                lote.montoRestante = 0;
+                            }
+                        }
+                    }
+
+                    op.lotesConsumidos = consumosCompra;
+                    op.loteTag = descLotes.length > 0 ? descLotes.join(', ') : 'N/A';
+                }
+            });
+
+            lotes = lotesActivos;
+            actualizarRatings();
+        }
+
+        function actualizarDashboard() {
+            const opsDelDia = operaciones.filter(op => op.fecha === fechaActualStr);
+            const comprasDia = opsDelDia.filter(op => (op.tipo || '').toUpperCase() === 'COMPRA');
+            const ventasDia = opsDelDia.filter(op => (op.tipo || '').toUpperCase() === 'VENTA');
+
+            const gananciaDiaCripto = ventasDia.reduce((acc, op) => acc + (op.gananciaCripto || 0), 0);
+            const gananciaDiaVes = ventasDia.reduce((acc, op) => acc + (op.gananciaVes || 0), 0);
+
+            document.getElementById('dash-ganancia-dia-usdc').innerHTML = gananciaDiaCripto.toFixed(4) + ' <span style="font-size: 1.1rem;">USDC</span>';
+            document.getElementById('dash-ganancia-dia-ves').innerText = gananciaDiaVes.toFixed(2) + " VES";
+
+            let pctMeta = Math.min(100, (gananciaDiaCripto / metaDiariaUSDC) * 100);
+            document.getElementById('meta-diaria-fill').style.width = pctMeta + '%';
+            document.getElementById('meta-diaria-progreso').innerText = `${gananciaDiaCripto.toFixed(2)} / ${metaDiariaUSDC.toFixed(2)} USDC (Meta Día)`;
+            document.getElementById('meta-diaria-pct').innerText = pctMeta.toFixed(0) + '%';
+
+            const promCompra = comprasDia.length > 0 ? comprasDia.reduce((acc, op) => acc + op.tasa, 0) / comprasDia.length : 0;
+            const promVenta = ventasDia.length > 0 ? ventasDia.reduce((acc, op) => acc + op.tasa, 0) / ventasDia.length : 0;
+            
+            let brecha = 0;
+            if (promCompra > 0 && promVenta > 0) {
+                brecha = ((promVenta - promCompra) / promCompra) * 100;
+            }
+
+            const lotesAbiertosDia = lotes.filter(l => l.fecha === fechaActualStr && l.estado === 'ABIERTO').length;
+
+            const totalRecompraPendienteDia = lotes.filter(l => l.fecha === fechaActualStr && l.estado === 'ABIERTO').reduce((acc, l) => acc + l.montoRestante, 0);
+            const totalComprasCriptoDia = comprasDia.reduce((acc, op) => acc + op.monto, 0);
+            const totalVentasCriptoDia = ventasDia.reduce((acc, op) => acc + op.monto, 0);
+            const totalReventaPendienteDia = Math.max(0, totalComprasCriptoDia - totalVentasCriptoDia);
+            const totalPendientesUSDCDia = totalRecompraPendienteDia + totalReventaPendienteDia;
+
+            document.getElementById('dash-prom-compra').innerText = promCompra.toFixed(2);
+            document.getElementById('dash-prom-venta').innerText = promVenta.toFixed(2);
+            document.getElementById('dash-brecha').innerText = brecha.toFixed(2) + "%";
+            document.getElementById('dash-total-ops').innerText = opsDelDia.length;
+            document.getElementById('dash-lotes').innerText = lotesAbiertosDia;
+            document.getElementById('dash-ganancia-cripto').innerText = gananciaDiaCripto.toFixed(2);
+            document.getElementById('dash-pendientes').innerText = totalPendientesUSDCDia.toFixed(2) + " USDC";
+            
+            document.getElementById('txt-meta').innerText = gananciaDiaCripto.toFixed(2) + " / 1000.00 USDC";
+            let metaPct = Math.min(100, (gananciaDiaCripto / 1000) * 100);
+            document.getElementById('txt-meta-pct').innerText = metaPct.toFixed(0) + "%";
+
+            filtrarHistorial();
+        }
+
+        function actualizarCalculosResumenGanancias() {
+            const opsHoy = operaciones.filter(op => op.fecha === fechaActualStr && (op.tipo || '').toUpperCase() === 'VENTA');
+            const gHoyVes = opsHoy.reduce((acc, op) => acc + (op.gananciaVes || 0), 0);
+            const gHoyUsdc = opsHoy.reduce((acc, op) => acc + (op.gananciaCripto || 0), 0);
+
+            const fechaRef = new Date(fechaActualStr + 'T00:00:00');
+            const inicioSemana = new Date(fechaRef);
+            inicioSemana.setDate(fechaRef.getDate() - 6);
+            
+            const opsSemana = operaciones.filter(op => {
+                if(!op.fecha) return false;
+                const dOp = new Date(op.fecha + 'T00:00:00');
+                return dOp >= inicioSemana && dOp <= fechaRef && (op.tipo || '').toUpperCase() === 'VENTA';
+            });
+            const gSemVes = opsSemana.reduce((acc, op) => acc + (op.gananciaVes || 0), 0);
+            const gSemUsdc = opsSemana.reduce((acc, op) => acc + (op.gananciaCripto || 0), 0);
+
+            const [yRef, mRef] = fechaActualStr.split('-');
+            const opsMes = operaciones.filter(op => {
+                if(!op.fecha) return false;
+                const [yOp, mOp] = op.fecha.split('-');
+                return yOp === yRef && mOp === mRef && (op.tipo || '').toUpperCase() === 'VENTA';
+            });
+            const gMesVes = opsMes.reduce((acc, op) => acc + (op.gananciaVes || 0), 0);
+            const gMesUsdc = opsMes.reduce((acc, op) => acc + (op.gananciaCripto || 0), 0);
+
+            document.getElementById('res-ganancia-hoy-ves').innerText = gHoyVes.toFixed(2) + " VES";
+            document.getElementById('res-ganancia-hoy-usdc').innerText = gHoyUsdc.toFixed(4) + " USDC";
+
+            document.getElementById('res-ganancia-sem-ves').innerText = gSemVes.toFixed(2) + " VES";
+            document.getElementById('res-ganancia-sem-usdc').innerText = gSemUsdc.toFixed(4) + " USDC";
+
+            document.getElementById('res-ganancia-mes-ves').innerText = gMesVes.toFixed(2) + " VES";
+            document.getElementById('res-ganancia-mes-usdc').innerText = gMesUsdc.toFixed(4) + " USDC";
+        }
+
+        function actualizarContenidoPendientes() {
+            const lotesAbiertos = lotes.filter(l => l.fecha === fechaActualStr && l.estado === 'ABIERTO');
+            const totalRecompra = lotesAbiertos.reduce((acc, l) => acc + l.montoRestante, 0);
+
+            const opsDelDia = operaciones.filter(op => op.fecha === fechaActualStr);
+            const comprasTotales = opsDelDia.filter(op => (op.tipo || '').toUpperCase() === 'COMPRA');
+            const ventasTotales = opsDelDia.filter(op => (op.tipo || '').toUpperCase() === 'VENTA');
+            const totalComprasCripto = comprasTotales.reduce((acc, op) => acc + op.monto, 0);
+            const totalVentasCripto = ventasTotales.reduce((acc, op) => acc + op.monto, 0);
+
+            const totalReventa = Math.max(0, totalComprasCripto - totalVentasCripto);
+
+            document.getElementById('pend-recompra-monto').innerText = totalRecompra.toFixed(2) + " USDC";
+            document.getElementById('pend-reventa-monto').innerText = totalReventa.toFixed(2) + " USDC";
+
+            document.getElementById('lista-recompra-pendientes').innerHTML = lotesAbiertos.length > 0 ? 
+                lotesAbiertos.map(l => `<div>• Lote ${l.idTag} - Falta recomprar: <b>${l.montoRestante.toFixed(2)} USDC</b></div>`).join('') : 
+                'No hay recompra pendiente.';
+
+            const reventaPendienteOps = opsDelDia.filter(op => op.estatus === 'En Curso' && (op.tipo || '').toUpperCase() === 'VENTA');
+            
+            let htmlReventa = '';
+            if (totalReventa > 0) {
+                htmlReventa += `<div style="margin-bottom:4px; color: var(--accent-orange);">• Inventario disponible por colocar: <b>${totalReventa.toFixed(2)} USDC</b></div>`;
+            }
+            if (reventaPendienteOps.length > 0) {
+                htmlReventa += reventaPendienteOps.map(op => `<div>• En Curso con ${op.usuario} - Ref: ${op.referencia} (<b>${op.monto.toFixed(2)} USDC</b>)</div>`).join('');
+            }
+            if (!htmlReventa) {
+                htmlReventa = 'No hay reventa pendiente.';
+            }
+
+            document.getElementById('lista-reventa-pendientes').innerHTML = htmlReventa;
+        }
+
+        function actualizarRatings() {
+            const container = document.getElementById('ratings-container');
+            if (!container) return;
+            const usuariosMap = {};
+            
+            operaciones.forEach(op => {
+                if(op.usuario && op.usuario !== 'N/A') {
+                    if(!usuariosMap[op.usuario]) {
+                        usuariosMap[op.usuario] = { totalOps: 0, completadas: 0 };
+                    }
+                    usuariosMap[op.usuario].totalOps++;
+                    if(op.estatus === 'Completado') {
+                        usuariosMap[op.usuario].completadas++;
+                    }
+                }
+            });
+
+            const keys = Object.keys(usuariosMap);
+            if(keys.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px;">Sin calificaciones aún.</div>`;
+                return;
+            }
+
+            let html = '';
+            keys.forEach(usr => {
+                const data = usuariosMap[usr];
+                html += `
+                    <div class="neon-card" style="padding: 12px; margin-bottom: 8px; cursor: default;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-weight:bold; font-size:0.95rem;">${usr}</span>
+                            <span style="color:var(--accent-green); font-size:0.85rem; font-weight:bold;">5.0 ★</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
+                            Operaciones registradas: <b>${data.totalOps}</b> (${data.completadas} completadas)
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function filtrarHistorial() {
+            const qInput = document.getElementById('busqueda-filtro');
+            const tipoInput = document.getElementById('filtro-tipo');
+            const metodoInput = document.getElementById('filtro-metodo');
+
+            const q = qInput ? qInput.value.toLowerCase() : '';
+            const tipoFiltro = tipoInput ? tipoInput.value.toUpperCase() : 'TODAS';
+            const metodoFiltro = metodoInput ? metodoInput.value : 'Todos';
+
+            const filtradas = operaciones.filter(op => {
+                const matchFecha = op.fecha === fechaActualStr;
+                const matchQ = op.usuario.toLowerCase().includes(q) || op.referencia.toLowerCase().includes(q);
+                const opTipoUpper = (op.tipo || '').toUpperCase();
+                const matchTipo = (tipoFiltro === 'TODAS' || opTipoUpper === tipoFiltro);
+                const matchMetodo = (metodoFiltro === 'Todos' || op.metodo === metodoFiltro);
+                return matchFecha && matchQ && matchTipo && matchMetodo;
+            });
+
+            renderizarHistorial(filtradas);
+        }
+
+        function renderizarHistorial(lista) {
+            const container = document.getElementById('history-container');
+            if (!container) return;
+            if (lista.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">No hay operaciones para este día.</div>`;
+                return;
+            }
+
+            let html = '';
+            lista.forEach((op) => {
+                const opTipoUpper = (op.tipo || '').toUpperCase();
+                const esVenta = opTipoUpper === 'VENTA';
+                const classType = esVenta ? 'type-venta' : 'type-compra';
+                const classAvatar = esVenta ? 'avatar-venta' : 'avatar-compra';
+                const classTag = esVenta ? 'tag-venta' : 'tag-compra';
+                const inicialUser = (op.usuario || 'U').charAt(0).toUpperCase();
+
+                let loteBadgeHtml = '';
+                if (esVenta && op.loteObj) {
+                    if (op.loteObj.estado === 'CERRADO') {
+                        loteBadgeHtml = `Lote <span style="color: var(--neon-blue); font-weight: bold;">${op.loteTag}</span> <span style="color: var(--accent-green); font-size: 0.75rem; font-weight: bold;">● Cerrado</span>`;
+                    } else {
+                        loteBadgeHtml = `Lote <span style="color: var(--neon-blue); font-weight: bold;">${op.loteTag}</span> <span style="color: var(--accent-orange); font-size: 0.75rem; font-weight: bold;">(Falta ${op.loteObj.montoRestante.toFixed(2)})</span>`;
+                    }
+                } else if (!esVenta) {
+                    loteBadgeHtml = `Lote: <span style="color: var(--neon-blue); font-weight: bold;">${op.loteTag || 'N/A'}</span>`;
+                } else {
+                    loteBadgeHtml = `Lote: <span style="color: var(--neon-blue); font-weight: bold;">N/A</span>`;
+                }
+
+                let gananciaVes = op.gananciaVes || 0;
+                let gananciaUsdc = op.gananciaCripto || 0;
+
+                html += `
+                    <div class="op-card-item ${classType}" onclick="abrirDetalleOp(${op.id})">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div class="avatar-circle ${classAvatar}">${inicialUser}</div>
+                                <div>
+                                    <div style="font-size: 0.95rem; font-weight: 800; color: #fff;">${op.usuario} <span style="color: var(--accent-orange); font-size: 0.8rem;">5.0 ★</span></div>
+                                    <div style="font-size: 0.72rem; color: var(--text-muted);">${op.metodo} ➔ DashSY</div>
+                                </div>
+                            </div>
+                            <span class="tag-tipo ${classTag}">${opTipoUpper}</span>
+                        </div>
+
+                        <div class="op-grid-2x2">
+                            <div>
+                                <div class="op-grid-col-label">MONTO USDC</div>
+                                <div class="op-grid-col-val">${op.monto.toFixed(3)}</div>
+                            </div>
+                            <div>
+                                <div class="op-grid-col-label">MONTO BS</div>
+                                <div class="op-grid-col-val">${op.montoBs.toFixed(2)}</div>
+                            </div>
+                            <div>
+                                <div class="op-grid-col-label">TASA</div>
+                                <div class="op-grid-col-val">${op.tasa.toFixed(2)}</div>
+                            </div>
+                            <div>
+                                <div class="op-grid-col-label">GANANCIA</div>
+                                <div class="ganancia-val-green">+${gananciaVes.toFixed(2)} <span style="font-size: 0.7rem;">VES</span></div>
+                                <div class="ganancia-sub-usdc">≈ +${gananciaUsdc.toFixed(2)} USDC</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px dashed var(--card-border); padding-top: 8px;">
+                            <div style="font-size: 0.72rem; color: var(--text-muted);">
+                                REF: <span style="color: #cbd5e1;">${op.referencia}</span> · ${loteBadgeHtml}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;" onclick="event.stopPropagation()">
+                                <button type="button" onclick="pedirConfirmacionMover(${op.id}, 'arriba')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.85rem;" title="Subir">⬆️</button>
+                                <button type="button" onclick="pedirConfirmacionMover(${op.id}, 'abajo')" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.85rem;" title="Bajar">⬇️</button>
+                                <span class="status-pill">● ${op.estatus}</span>
+                                <button type="button" onclick="editarOp(${op.id})" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem;" title="Editar">✏️</button>
+                                <button type="button" onclick="eliminarOp(${op.id})" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem;" title="Eliminar">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function abrirDetalleOp(id) {
+            const op = operaciones.find(o => o.id === id);
+            if(!op) return;
+
+            const opTipoUpper = (op.tipo || '').toUpperCase();
+            const colorTipo = opTipoUpper === 'COMPRA' ? 'var(--accent-green)' : 'var(--accent-red)';
+
+            let fifoHtml = '';
+            if (opTipoUpper === 'VENTA' && op.loteObj) {
+                const lote = op.loteObj;
+                const estadoLoteTxt = lote.estado === 'CERRADO' ? '<span style="color: var(--accent-green);">Cerrado</span>' : '<span style="color: var(--accent-orange);">Abierto</span>';
+                
+                let comprasConsumidorasHtml = '';
+                if (lote.consumos && lote.consumos.length > 0) {
+                    lote.consumos.forEach(c => {
+                        comprasConsumidorasHtml += `
+                            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:4px; padding-left:10px; border-left:2px solid var(--accent-green);">
+                                <span style="color: var(--text-color);"><b>${c.usuarioCompra}</b> — ${c.monto.toFixed(3)} USDC</span>
+                                <span style="color: var(--text-muted);">${c.fecha}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    comprasConsumidorasHtml = `<div style="font-size:0.8rem; color: var(--text-muted); padding-left:10px;">Sin compras asociadas aún.</div>`;
+                }
+
+                fifoHtml = `
+                    <div style="background: var(--bg-color); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 0.85rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="color: var(--neon-blue); font-weight: bold;">FIFO / LOTES</span>
+                            <span>${estadoLoteTxt}</span>
+                        </div>
+                        <div style="background: #121722; padding: 10px; border-radius: 6px; border: 1px solid var(--card-border);">
+                            <div style="font-weight: bold; color: var(--neon-blue); margin-bottom: 6px;">${lote.idTag}</div>
+                            <div style="font-size: 0.8rem; margin-bottom: 4px;">VENTA: <b>${op.usuario} — ${op.monto.toFixed(3)} USDC</b></div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">COMPRAS:</div>
+                            ${comprasConsumidorasHtml}
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:0.8rem; color: var(--text-muted);">
+                            <span>GANANCIA:</span>
+                            <span style="color: var(--accent-green); font-weight: bold;">+${(op.gananciaVes || 0).toFixed(2)} VES</span>
+                        </div>
+                    </div>
+                `;
+            } else if (opTipoUpper === 'COMPRA') {
+                let lotesConsumidosHtml = '';
+                if (op.lotesConsumidos && op.lotesConsumidos.length > 0) {
+                    op.lotesConsumidos.forEach(lc => {
+                        lotesConsumidosHtml += `
+                            <div style="font-size:0.8rem; margin-top:4px; padding-left:10px; border-left:2px solid var(--neon-blue);">
+                                Lote consumido: <b>${lc.loteTag}</b> (${lc.monto.toFixed(3)} USDC)
+                            </div>
+                        `;
+                    });
+                } else {
+                    lotesConsumidosHtml = `<div style="font-size:0.8rem; color: var(--text-muted);">Sin lote asignado.</div>`;
+                }
+
+                fifoHtml = `
+                    <div style="background: var(--bg-color); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 0.85rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="color: var(--neon-blue); font-weight: bold;">FIFO / LOTES</span>
+                        </div>
+                        <div style="background: #121722; padding: 10px; border-radius: 6px; border: 1px solid var(--card-border);">
+                            ${lotesConsumidosHtml}
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:0.8rem; color: var(--text-muted);">
+                            <span>GANANCIA:</span>
+                            <span style="color: var(--accent-green); font-weight: bold;">+${(op.gananciaVes || 0).toFixed(2)} VES</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const contenidoDetalle = document.getElementById('contenido-detalle-op');
+            if (contenidoDetalle) {
+                contenidoDetalle.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #fff; font-size: 1.1rem;">📄 Detalle de Operación</h3>
+                        <button type="button" onclick="document.getElementById('modal-detalle-op').style.display='none'" class="btn-modal-close">✕</button>
+                    </div>
+
+                    <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; margin-bottom: 12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <span style="font-size: 1rem; font-weight: bold;">${op.usuario}</span>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <span class="tag-tipo" style="background:${colorTipo}20; color:${colorTipo};">${opTipoUpper}</span>
+                                <button type="button" onclick="editarOp(${op.id})" style="background:#1e2638; border:1px solid var(--card-border); color:var(--neon-blue); padding:4px 8px; border-radius:6px; font-size:0.75rem; cursor:pointer;">✏️ Editar</button>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span>Referencia: <b>${op.referencia}</b></span>
+                            <span>Fecha: <b>${op.fecha}</b></span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); display:flex; justify-content:space-between;">
+                            <span>Método: <b>${op.metodo}</b></span>
+                            <span>Estatus: <b>${op.estatus}</b></span>
+                        </div>
+                    </div>
+
+                    <div class="op-grid-2x2" style="background: var(--bg-color); padding: 10px; border-radius: 8px; border: 1px solid var(--card-border);">
+                        <div>
+                            <div class="op-grid-col-label">MONTO USDC</div>
+                            <div class="op-grid-col-val">${op.monto.toFixed(3)}</div>
+                        </div>
+                        <div>
+                            <div class="op-grid-col-label">MONTO BS</div>
+                            <div class="op-grid-col-val">${op.montoBs.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div class="op-grid-col-label">TASA</div>
+                            <div class="op-grid-col-val">${op.tasa.toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div class="op-grid-col-label">LOTE</div>
+                            <div class="op-grid-col-val" style="color: var(--neon-blue);">${op.loteTag || 'N/A'}</div>
+                        </div>
+                    </div>
+
+                    ${fifoHtml}
+                `;
+            }
+
+            const modalDetalle = document.getElementById('modal-detalle-op');
+            if (modalDetalle) modalDetalle.style.display = 'flex';
+        }
+
+        function eliminarOp(id) {
+            if(confirm("¿Seguro que quieres eliminar esta operación?")) {
+                operaciones = operaciones.filter(op => op.id !== id);
+                recalcularLotesMotor();
+                guardarDatos();
+                actualizarDashboard();
+            }
+        }
+
+        function exportarDatosJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ operaciones, capitalInicial }));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `dashsy_backup_${fechaActualStr}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importarDatosJSON(event) {
+            const fileReader = new FileReader();
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0], "UTF-8");
+                fileReader.onload = (e) => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        operaciones = parsed.operaciones || [];
+                        capitalInicial = parsed.capitalInicial || 0;
+                        const txtCapital = document.getElementById('txt-capital');
+                        if(capitalInicial > 0 && txtCapital) txtCapital.innerText = capitalInicial + " VES registrado";
+                        recalcularLotesMotor();
+                        guardarDatos();
+                        actualizarDashboard();
+                        alert("¡Datos importados con éxito!");
+                    } catch (err) {
+                        alert("El archivo no es válido.");
+                    }
+                };
+            }
+        }
+
+        function borrarTodo() {
+            if (confirm("¿Restablecer todos los datos?")) {
+                operaciones = [];
+                lotes = [];
+                capitalInicial = 0;
+                guardarDatos();
+                actualizarDashboard();
+            }
+        }
+
+        function guardarDatos() {
+            if (!usuarioActualId) return;
+            try {
+                const datosLimpios = operaciones.map(op => ({
+                    id: op.id,
+                    usuario: op.usuario,
+                    referencia: op.referencia,
+                    estatus: op.estatus,
+                    tipo: op.tipo,
+                    metodo: op.metodo,
+                    monto: op.monto,
+                    tasa: op.tasa,
+                    comisionCripto: op.comisionCripto,
+                    montoBs: op.montoBs,
+                    fecha: op.fecha
+                }));
+                db.collection("usuarios_datos").doc(usuarioActualId).set({
+                    operaciones: datosLimpios,
+                    capitalInicial: capitalInicial
+                }).catch((e) => {
+                    console.error("Error al sincronizar con la nube:", e);
+                });
+            } catch (e) {
+                console.error("Error al preparar datos", e);
+            }
+        }
+
+            function cargarDatosNube() {
+      if (!usuarioActualId) return;
+      db.collection("usuarios_datos").doc(usuarioActualId).get().then((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          operaciones = data.operaciones || [];
+          capitalInicial = data.capitalInicial || 0;
+        } else {
+          operaciones = [];
+          capitalInicial = 0;
+        }
+        recalcularLotesMotor();
+        actualizarDashboard();
+      }).catch((e) => {
+        console.error("Error al cargar de la nube:", e);
+      });
+    }
+  </script>
+
+  <!-- Service Worker para la PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker registrado', reg))
+        .catch(err => console.error('Error al registrar Service Worker', err));
+    }
+  </script>
+</body>
+</html>
+
