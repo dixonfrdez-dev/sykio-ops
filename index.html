@@ -23,9 +23,9 @@
         .widget-title { color: #58a6ff; font-weight: bold; }
         .widget-controls button { background: none; border: none; color: #8b949e; cursor: pointer; margin-left: 8px; font-size: 14px; }
         
-        /* Contenedor iframe para la página original */
-        .iframe-container { width: 100%; height: 500px; background: #0d1117; }
-        .iframe-container iframe { width: 100%; height: 100%; border: none; }
+        .widget-body { padding: 15px; text-align: center; }
+        .btn-explorer { display: block; background: #1f6feb; color: white; text-decoration: none; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px; margin-top: 5px; text-align: center; }
+        .btn-explorer:hover { background: #388bfd; }
 
         .control-center { position: fixed; bottom: 0; left: 0; width: 100%; background: #161b22; border-top: 1px solid #30363d; padding: 8px 12px; font-size: 12px; z-index: 99; }
         .control-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
@@ -65,7 +65,7 @@
     <div id="transacciones-section" class="section-content">
         <div class="widget-card">
             <div class="widget-header"><span class="widget-title">Historial Reciente</span></div>
-            <div class="widget-body" style="padding: 12px; font-size: 12px; color: #8b949e;">
+            <div class="widget-body" style="font-size: 12px; color: #8b949e;">
                 No hay transacciones registradas.
             </div>
         </div>
@@ -77,7 +77,7 @@
             <span style="color: #8b949e; font-size: 11px;">7:48:12 P.M.</span>
         </div>
         <div class="control-logs" id="logsSistema">
-            [SISTEMA]: Widgets enlazados con la página original.
+            [SISTEMA]: Enlaces directos configurados.
         </div>
     </div>
 
@@ -156,8 +156,9 @@
                                 <button title="Cerrar" onclick="eliminarWidget(${w.id})">❌</button>
                             </div>
                         </div>
-                        <div class="iframe-container">
-                            <iframe src="https://explorer.sykio.io/swap#is_sending=true"></iframe>
+                        <div class="widget-body">
+                            <p style="font-size: 12px; color: #8b949e; margin-bottom: 8px;">Accede al listado de órdenes en tiempo real:</p>
+                            <a href="https://explorer.sykio.io/swap#is_sending=true" target="_blank" class="btn-explorer">Abrir ${w.nombre} ↗</a>
                         </div>
                     </div>
                 `;
