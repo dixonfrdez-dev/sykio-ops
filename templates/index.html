@@ -19,6 +19,8 @@
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
         .modal-content { background: #1e293b; padding: 20px; border-radius: 8px; width: 90%; max-width: 300px; text-align: center; }
         select, button { width: 100%; padding: 8px; margin-top: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; }
+        .iframe-container { width: 100%; height: 500px; border-radius: 6px; overflow: hidden; background: #fff; }
+        .iframe-container iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
@@ -41,7 +43,7 @@
             <select id="select-servicio">
                 <option value="Pago Móvil|VES">Pago Móvil VES</option>
                 <option value="Banco de Venezuela|VES">Banco de Venezuela VES</option>
-                <option value="Bancamiga|VES">Bancamiga VES</option>
+                <option value="Syklo Web|Navegador">🌐 Syklo (Navegador Interno)</option>
             </select>
             <button style="background: #0284c7; border: none; font-weight: bold; cursor: pointer;" onclick="agregarPanel()">Agregar</button>
             <button style="background: #ef4444; border: none; font-weight: bold; cursor: pointer;" onclick="cerrarModal()">Cancelar</button>
@@ -51,7 +53,7 @@
     <script>
         let panelesActivos = [
             { id: 1, servicio: "Pago Móvil", moneda: "VES" },
-            { id: 2, servicio: "Banco de Venezuela", moneda: "VES" }
+            { id: 2, servicio: "Syklo Web", moneda: "Navegador" }
         ];
 
         function renderPaneles() {
@@ -66,33 +68,51 @@
             panelesActivos.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'card';
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span>📱 ${p.servicio} | ${p.moneda}</span>
-                        <div>
-                            <button class="btn-action" onclick="recargarPanel(${p.id})">🔄</button>
-                            <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
+
+                if (p.servicio === "Syklo Web") {
+                    // Renderizar panel con navegador interno (iframe)
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span>🌐 Syklo (Navegador Integrado)</span>
+                            <div>
+                                <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Orden</th>
-                                    <th>Precio</th>
-                                    <th>Mín</th>
-                                    <th>Máx</th>
-                                    <th>Comerciante</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-${p.id}">
-                                <tr><td colspan="5" style="text-align: center; color: #94a3b8;">Cargando...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-                container.appendChild(card);
-                cargarDatosPanel(p.id, p.servicio);
+                        <div class="iframe-container">
+                            <iframe src="https://syklo.app"></iframe>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                } else {
+                    // Renderizar panel de tabla de precios normal
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span>📱 ${p.servicio} | ${p.moneda}</span>
+                            <div>
+                                <button class="btn-action" onclick="recargarPanel(${p.id})">🔄</button>
+                                <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                               <thead>
+                                    <tr>
+                                        <th>Orden</th>
+                                        <th>Precio</th>
+                                        <th>Mín</th>
+                                        <th>Máx</th>
+                                        <th>Comerciante</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-${p.id}">
+                                    <tr><td colspan="5" style="text-align: center; color: #94a3b8;">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                    cargarDatosPanel(p.id, p.servicio);
+                }
             });
         }
 
@@ -101,11 +121,11 @@
                 .then(res => res.json())
                 .then(data => {
                     const tbody = document.getElementById(`tabla-${id}`);
+                    if(!tbody) return;
                     tbody.innerHTML = '';
                     if (data.success && data.ordenes.length > 0) {
                         data.ordenes.forEach(o => {
                             const tr = document.createElement('tr');
-                            if(o.es_mia) tr.style.background = "rgba(2, 132, 199, 0.2)";
                             tr.innerHTML = `
                                 <td>${o.tipo}</td>
                                 <td><strong>${o.precio.toFixed(2)}</strong></td>
@@ -141,7 +161,7 @@
 
         function recargarPanel(id) {
             const p = panelesActivos.find(item => item.id === id);
-            if(p) cargarDatosPanel(p.id, p.servicio);
+            if(p && p.servicio !== "Syklo Web") cargarDatosPanel(p.id, p.servicio);
         }
 
         document.addEventListener('DOMContentLoaded', renderPaneles);
