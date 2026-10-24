@@ -53,6 +53,9 @@
                     <option value="Wally|USD">💵 Wally | USD</option>
                     <option value="Zinli|USD">💵 Zinli | USD</option>
                 </optgroup>
+                <optgroup label="SITIOS OFICIALES">
+                    <option value="Syklo Web|Navegador">🌐 Aplicación Web Syklo</option>
+                </optgroup>
             </select>
             <button style="background: #2563eb; font-weight: bold; cursor: pointer;" onclick="agregarPanel()">Agregar</button>
             <button style="background: #dc2626; font-weight: bold; cursor: pointer;" onclick="cerrarModal()">Cancelar</button>
@@ -79,21 +82,33 @@
                 const card = document.createElement('div');
                 card.className = 'card';
 
-                // URL con hash para que la extensión capture el servicio y filtre en automático
-                const urlExplorer = `https://explorer.syklo.io/#${encodeURIComponent(p.servicio)}`;
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span>📱 ${p.servicio} | ${p.moneda}</span>
-                        <div>
-                            <button class="btn-action" onclick="recargarIframe('iframe-${p.id}')">🔄</button>
-                            <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
+                if (p.servicio === "Syklo Web") {
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span>🌐 Aplicación Web Syklo</span>
+                            <div>
+                                <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="iframe-container">
-                        <iframe id="iframe-${p.id}" src="${urlExplorer}" allow="clipboard-read; clipboard-write"></iframe>
-                    </div>
-                `;
+                        <div class="iframe-container">
+                            <iframe src="https://webapp.syklo.io/" allow="clipboard-read; clipboard-write"></iframe>
+                        </div>
+                    `;
+                } else {
+                    const urlExplorer = `https://explorer.syklo.io/#${encodeURIComponent(p.servicio)}`;
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span>📱 ${p.servicio} | ${p.moneda}</span>
+                            <div>
+                                <button class="btn-action" onclick="recargarIframe('iframe-${p.id}')">🔄</button>
+                                <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
+                            </div>
+                        </div>
+                        <div class="iframe-container">
+                            <iframe id="iframe-${p.id}" src="${urlExplorer}" allow="clipboard-read; clipboard-write"></iframe>
+                        </div>
+                    `;
+                }
                 container.appendChild(card);
             });
         }
