@@ -39,7 +39,7 @@
             <select id="select-servicio">
                 <option value="Pago Móvil|VES">📱 Pago Móvil VES</option>
                 <option value="Banco de Venezuela|VES">🏦 Banco de Venezuela VES</option>
-                <option value="Syklo Explorer|Navegador">📊 Explorador Syklo (Precios)</option>
+                <option value="Syklo Explorer|Navegador">📊 Explorador Syklo General</option>
             </select>
             <button style="background: #0284c7; font-weight: bold; cursor: pointer;" onclick="agregarPanel()">Agregar</button>
             <button style="background: #ef4444; font-weight: bold; cursor: pointer;" onclick="cerrarModal()">Cancelar</button>
@@ -69,7 +69,7 @@
                             </div>
                         </div>
                         <div class="iframe-container" style="width: 100%; height: 450px; background: #0f172a; border-radius: 6px; overflow: hidden;">
-                            <iframe src="https://explorer.syklo.io/" style="width: 100%; height: 100%; border: none;"></iframe>
+                            <iframe id="iframe-explorer" src="https://explorer.syklo.io/" style="width: 100%; height: 100%; border: none;"></iframe>
                         </div>
                     `;
                 } else {
@@ -77,6 +77,7 @@
                         <div class="card-header">
                             <span>📱 ${p.servicio} | ${p.moneda}</span>
                             <div>
+                                <button class="btn-action" onclick="filtrarEnExplorer('${p.servicio}')" title="Ver en explorador">🔍</button>
                                 <button class="btn-action" onclick="recargarPanel(${p.id})">🔄</button>
                                 <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
                             </div>
@@ -133,6 +134,22 @@
                 });
         }
 
+        // Función para sincronizar y filtrar el explorador según la tasa agregada/seleccionada
+        function filtrarEnExplorer(servicio) {
+            const iframe = document.getElementById('iframe-explorer');
+            if (iframe) {
+                // Actualiza la URL del explorador con el término de búsqueda/filtro
+                const urlFiltrada = `https://explorer.syklo.io/?search=${encodeURIComponent(servicio)}`;
+                iframe.src = urlFiltrada;
+            } else {
+                // Si el panel del explorador no está agregado, lo crea automáticamente
+                const nuevoId = panelesActivos.length > 0 ? Math.max(...panelesActivos.map(p => p.id)) + 1 : 1;
+                panelesActivos.push({ id: nuevoId, servicio: "Syklo Explorer", moneda: "Navegador" });
+                renderPaneles();
+                setTimeout(() => filtrarEnExplorer(servicio), 300);
+            }
+        }
+
         function abrirModal() { 
             const modal = document.getElementById('modal-servicio');
             if(modal) modal.style.display = 'flex'; 
@@ -147,10 +164,18 @@
             const select = document.getElementById('select-servicio');
             if(!select) return;
             const val = select.value.split('|');
+            const servicioNombre = val[0];
+            const monedaNombre = val[1];
+
             const nuevoId = panelesActivos.length > 0 ? Math.max(...panelesActivos.map(p => p.id)) + 1 : 1;
-            panelesActivos.push({ id: nuevoId, servicio: val[0], moneda: val[1] });
+            panelesActivos.push({ id: nuevoId, servicio: servicioNombre, moneda: monedaNombre });
             cerrarModal();
             renderPaneles();
+
+            // Si es un método de pago, enfocar automáticamente en el explorador
+            if (servicioNombre !== "Syklo Explorer") {
+                filtrarEnExplorer(servicioNombre);
+            }
         }
 
         function eliminarPanel(id) {
