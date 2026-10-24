@@ -10,7 +10,8 @@ app = Flask(__name__, template_folder=os.path.join(base_dir, 'templates'))
 
 
 # Instancia global del Autotrader
-autotrader = Autotrader(margen_minimo=MARGEN_MINIMO_DEFECTO)
+autotrader = Autotrader(margen_minimo=MARGEN_MINIMO_DEFECTO, spread=SPREAD_DEFECTO)
+
 
 # Historial de eventos visuales (Logs)
 HISTORIAL_LOGS = []
