@@ -3,116 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syklo Autotrader Dashboard</title>
+    <title>Syklo Ops Dashboard</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 15px; }
-        .card { background: #1e293b; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .title { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stat { background: #0f172a; padding: 10px; border-radius: 6px; text-align: center; }
-        .stat-val { font-size: 1.2rem; font-weight: bold; margin-top: 5px; color: #38bdf8; }
-        .btn { background: #0284c7; color: white; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
-        .btn-danger { background: #ef4444; }
-        .logs { background: #000; color: #38bdf8; font-family: monospace; padding: 10px; border-radius: 6px; height: 120px; overflow-y: auto; font-size: 0.8rem; }
-        input[type="number"] { width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 4px; box-sizing: border-box; margin-top: 5px; }
-        label { font-size: 0.85rem; color: #94a3b8; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0f19; color: #f8fafc; margin: 0; padding: 10px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; }
+        .title { font-size: 1rem; font-weight: bold; color: #38bdf8; }
+        .btn-add { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        .card { background: #1e293b; border-radius: 8px; padding: 10px; margin-bottom: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 6px; margin-bottom: 8px; font-size: 0.9rem; font-weight: bold; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; color: #e2e8f0; font-size: 0.75rem; border-collapse: collapse; text-align: left; }
+        th, td { padding: 5px; border-bottom: 1px solid #1e293b; }
+        th { color: #94a3b8; }
+        .btn-action { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.9rem; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+        .modal-content { background: #1e293b; padding: 20px; border-radius: 8px; width: 90%; max-width: 300px; text-align: center; }
+        select, button { width: 100%; padding: 8px; margin-top: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; }
     </style>
 </head>
 <body>
-    <!-- Estado General -->
-    <div class="card">
-        <div class="title">
-            <span>⚡ Syklo Autotrader</span>
-            <span id="status">🟢 Activo</span>
-        </div>
-        <div class="grid">
-            <div class="stat">
-                <div>Mercado</div>
-                <div class="stat-val" id="val-mercado">--</div>
-            </div>
-            <div class="stat">
-                <div>Tu Oferta</div>
-                <div class="stat-val" id="val-oferta">--</div>
-            </div>
-        </div>
+
+    <!-- Cabecera Principal -->
+    <div class="header">
+        <span class="title">⚡ Syklo Ops v7.1</span>
+        <button class="btn-add" onclick="abrirModal()">+ Agregar</button>
     </div>
 
-    <!-- Ajustes -->
-    <div class="card">
-        <div class="title">⚙️ Ajustes</div>
-        <label>Piso Mínimo (VES):</label>
-        <input type="number" id="margen-min" step="5">
-        <br><br>
-        <label>Spread (+VES):</label>
-        <input type="number" id="spread" step="0.01">
-        <button class="btn" onclick="guardarAjustes()">💾 Guardar</button>
+    <!-- Contenedor Dinámico de Paneles -->
+    <div id="paneles-container">
+        <!-- Los paneles se cargarán aquí -->
     </div>
 
-    <!-- Controles -->
-    <div class="card">
-        <div class="title">🎮 Controles</div>
-        <button id="btn-toggle" class="btn btn-danger" onclick="toggleBot()">⏸️ Pausar Bot</button>
-    </div>
-
-    <!-- Monitor de Mercado (Competencia vs Tu Oferta) -->
-    <div class="card">
-        <div class="title">
-            <span>📊 Mercado Syklo</span>
-            <button onclick="actualizarMercado()" style="background: #0284c7; border: none; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">🔄 Actualizar</button>
+    <!-- Modal para Agregar Servicio -->
+    <div id="modal-servicio" class="modal">
+        <div class="modal-content">
+            <h3>Seleccionar Panel</h3>
+            <select id="select-servicio">
+                <option value="Pago Móvil|VES">Pago Móvil VES</option>
+                <option value="Banco de Venezuela|VES">Banco de Venezuela VES</option>
+                <option value="Bancamiga|VES">Bancamiga VES</option>
+            </select>
+            <button style="background: #0284c7; border: none; font-weight: bold; cursor: pointer;" onclick="agregarPanel()">Agregar</button>
+            <button style="background: #ef4444; border: none; font-weight: bold; cursor: pointer;" onclick="cerrarModal()">Cancelar</button>
         </div>
-        <div style="overflow-x: auto; margin-top: 5px;">
-            <table style="width: 100%; color: #e2e8f0; font-size: 0.85rem; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 1px solid #334155; text-align: left;">
-                        <th style="padding: 6px;">Trader</th>
-                        <th style="padding: 6px;">Precio</th>
-                        <th style="padding: 6px;">Estado</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-mercado">
-                    <tr>
-                        <td colspan="3" style="padding: 8px; text-align: center; color: #94a3b8;">Cargando mercado...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Logs en Vivo -->
-    <div class="card">
-        <div class="title">📜 Logs en Vivo</div>
-        <div class="logs" id="logs">Cargando logs...</div>
     </div>
 
     <script>
-        function actualizarMercado() {
-            fetch('/api/mercado')
-                .then(response => response.json())
+        let panelesActivos = [
+            { id: 1, servicio: "Pago Móvil", moneda: "VES" },
+            { id: 2, servicio: "Banco de Venezuela", moneda: "VES" }
+        ];
+
+        function renderPaneles() {
+            const container = document.getElementById('paneles-container');
+            container.innerHTML = '';
+            
+            if (panelesActivos.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;">No hay paneles activos.</div>';
+                return;
+            }
+
+            panelesActivos.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span>📱 ${p.servicio} | ${p.moneda}</span>
+                        <div>
+                            <button class="btn-action" onclick="recargarPanel(${p.id})">🔄</button>
+                            <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Orden</th>
+                                    <th>Precio</th>
+                                    <th>Mín</th>
+                                    <th>Máx</th>
+                                    <th>Comerciante</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-${p.id}">
+                                <tr><td colspan="5" style="text-align: center; color: #94a3b8;">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(card);
+                cargarDatosPanel(p.id, p.servicio);
+            });
+        }
+
+        function cargarDatosPanel(id, servicio) {
+            fetch(`/api/mercado?servicio=${encodeURIComponent(servicio)}`)
+                .then(res => res.json())
                 .then(data => {
-                    if (data.success) {
-                        const tbody = document.getElementById('tabla-mercado');
-                        tbody.innerHTML = '';
-                        data.ordenes.forEach(orden => {
+                    const tbody = document.getElementById(`tabla-${id}`);
+                    tbody.innerHTML = '';
+                    if (data.success && data.ordenes.length > 0) {
+                        data.ordenes.forEach(o => {
                             const tr = document.createElement('tr');
-                            tr.style.borderBottom = "1px solid #1e293b";
-                            if (orden.es_mia) {
-                                tr.style.background = "rgba(2, 132, 199, 0.2)";
-                            }
+                            if(o.es_mia) tr.style.background = "rgba(2, 132, 199, 0.2)";
                             tr.innerHTML = `
-                                <td style="padding: 6px;"><strong>${orden.trader}</strong></td>
-                                <td style="padding: 6px;">${orden.precio.toFixed(2)} VES</td>
-                                <td style="padding: 6px;">${orden.es_mia ? '🟢 Tu Oferta' : '⚪ Competencia'}</td>
+                                <td>${o.tipo}</td>
+                                <td><strong>${o.precio.toFixed(2)}</strong></td>
+                                <td>${o.min}</td>
+                                <td>${o.max}</td>
+                                <td>${o.comerciante}</td>
                             `;
                             tbody.appendChild(tr);
                         });
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Sin órdenes disponibles</td></tr>`;
                     }
-                })
-                .catch(err => console.error("Error al actualizar mercado:", err));
+                });
         }
 
-        // Actualizar mercado automáticamente cada 5 segundos
-        setInterval(actualizarMercado, 5000);
-        document.addEventListener('DOMContentLoaded', actualizarMercado);
+        function abrirModal() { document.getElementById('modal-servicio').style.display = 'flex'; }
+        function cerrarModal() { document.getElementById('modal-servicio').style.display = 'none'; }
+        
+        function agregarPanel() {
+            const val = document.getElementById('select-servicio').value.split('|');
+            const nuevoId = panelesActivos.length > 0 ? Math.max(...panelesActivos.map(p => p.id)) + 1 : 1;
+            panelesActivos.push({ id: nuevoId, servicio: val[0], moneda: val[1] });
+            cerrarModal();
+            renderPaneles();
+        }
+
+        function eliminarPanel(id) {
+            if(confirm("¿Eliminar este panel?")) {
+                panelesActivos = panelesActivos.filter(p => p.id !== id);
+                renderPaneles();
+            }
+        }
+
+        function recargarPanel(id) {
+            const p = panelesActivos.find(item => item.id === id);
+            if(p) cargarDatosPanel(p.id, p.servicio);
+        }
+
+        document.addEventListener('DOMContentLoaded', renderPaneles);
     </script>
 </body>
 </html>
