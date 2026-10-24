@@ -1,10 +1,19 @@
-from flask import Flask, render_template_string, jsonify, request
+from flask import Flask, render_template_string, jsonify
 import time
 import threading
 from core.autotrader import Autotrader
 from config import MARGEN_MINIMO_DEFECTO, SPREAD_DEFECTO
 
 app = Flask(__name__)
+@app.route('/api/mercado', methods=['GET'])
+def obtener_mercado():
+    # Órdenes de ejemplo o integración con el mercado real de Syklo
+    ordenes = [
+        {"trader": "Trader_Alpha", "precio": 1069.50, "limite": "$50 - $1000", "es_mia": False},
+        {"trader": "Tú (dixonfrdez)", "precio": 1069.05, "limite": "$10 - $500", "es_mia": True},
+        {"trader": "Trader_Beta", "precio": 1068.80, "limite": "$20 - $300", "es_mia": False},
+    ]
+    return jsonify({"success": True, "ordenes": ordenes})
 
 # Instancia global del Autotrader
 autotrader = Autotrader(margen_minimo=MARGEN_MINIMO_DEFECTO, spread=SPREAD_DEFECTO)
@@ -114,6 +123,57 @@ HTML_TEMPLATE = """
         <div class="title">🎮 Controles</div>
         <button id="btn-toggle" class="btn btn-danger" onclick="toggleBot()">⏸️ Pausar Bot</button>
     </div>
+    <!-- Monitor de Mercado -->
+    <div class="card">
+        <div class="title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📊 Mercado Syklo</span>
+            <button onclick="actualizarMercado()" style="background: #0284c7; border: none; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">🔄 Actualizar</button>
+        </div>
+        <div style="overflow-x: auto; margin-top: 10px;">
+            <table style="width: 100%; color: #e2e8f0; font-size: 0.85rem; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #334155; text-align: left;">
+                        <th style="padding: 6px;">Trader</th>
+                        <th style="padding: 6px;">Precio</th>
+                        <th style="padding: 6px;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-mercado">
+                    <tr>
+                        <td colspan="3" style="padding: 8px; text-align: center; color: #94a3b8;">Cargando mercado...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+    function actualizarMercado() {
+        fetch('/api/mercado')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const tbody = document.getElementById('tabla-mercado');
+                    tbody.innerHTML = '';
+                    data.ordenes.forEach(orden => {
+                        const tr = document.createElement('tr');
+                        tr.style.borderBottom = "1px solid #1e293b";
+                        if (orden.es_mia) {
+                            tr.style.background = "rgba(2, 132, 199, 0.2)";
+                        }
+                        tr.innerHTML = `
+                            <td style="padding: 6px;"><strong>${orden.trader}</strong></td>
+                            <td style="padding: 6px;">${orden.precio.toFixed(2)} VES</td>
+                            <td style="padding: 6px;">${orden.es_mia ? '🟢 Tu Oferta' : '⚪ Competencia'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            });
+    }
+    setInterval(actualizarMercado, 5000);
+    document.addEventListener('DOMContentLoaded', actualizarMercado);
+    </script>
 
     <div class="card">
         <div class="title">📜 Logs en Vivo</div>
