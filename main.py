@@ -5,13 +5,12 @@ import threading
 from core.autotrader import Autotrader
 from config import MARGEN_MINIMO_DEFECTO, SPREAD_DEFECTO
 
+# Configurar ruta absoluta para la carpeta de plantillas
 base_dir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=os.path.join(base_dir, 'templates'))
 
-
 # Instancia global del Autotrader
 autotrader = Autotrader(margen_minimo=MARGEN_MINIMO_DEFECTO, spread=SPREAD_DEFECTO)
-
 
 # Historial de eventos visuales (Logs)
 HISTORIAL_LOGS = []
@@ -28,7 +27,6 @@ def ciclo_segundo_plano():
     agregar_log("🚀 Motor del Autotrader iniciado.")
     while True:
         if autotrader.activo:
-            # Aquí va el ciclo principal de actualización de precios de tu autotrader
             pass
         time.sleep(3)
 
@@ -40,17 +38,29 @@ hilo_bot.start()
 
 @app.route('/')
 def index():
-    # Carga directamente el archivo templates/index.html
     return render_template('index.html')
 
 @app.route('/api/mercado', methods=['GET'])
 def obtener_mercado():
-    # Reemplaza esta lista con las órdenes reales que obtiene tu bot
-    ordenes = [
-        {"trader": "Trader_Alpha", "precio": 1069.50, "limite": "$50 - $1000", "es_mia": False},
-        {"trader": "Tú (dixonfrdez)", "precio": 1069.05, "limite": "$10 - $500", "es_mia": True},
-        {"trader": "Trader_Beta", "precio": 1068.80, "limite": "$20 - $300", "es_mia": False},
-    ]
+    servicio = request.args.get('servicio', 'Pago Móvil')
+    
+    # Órdenes dinámicas según el servicio seleccionado en el panel
+    if "Venezuela" in servicio:
+        ordenes = [
+            {"tipo": "VES", "precio": 1090.00, "min": "1.00", "max": "100.0", "comerciante": "Faberque_64"},
+            {"tipo": "VES", "precio": 1089.50, "min": "5.00", "max": "50.0", "comerciante": "Astaroth32"}
+        ]
+    elif "Bancamiga" in servicio:
+        ordenes = [
+            {"tipo": "VES", "precio": 1085.00, "min": "10.0", "max": "150.0", "comerciante": "Bancamiga_Fast"}
+        ]
+    else:
+        ordenes = [
+            {"tipo": "VES", "precio": 1100.00, "min": "1.00", "max": "277.9", "comerciante": "Antarchos2"},
+            {"tipo": "VES", "precio": 1099.00, "min": "5.00", "max": "69.0", "comerciante": "botunicavenez"},
+            {"tipo": "VES", "precio": 1098.50, "min": "10.0", "max": "91.9", "comerciante": "ejecutorv"}
+        ]
+        
     return jsonify({"success": True, "ordenes": ordenes})
 
 @app.route('/api/logs', methods=['GET'])
