@@ -1,10 +1,13 @@
+import os
 from flask import Flask, render_template, jsonify, request
 import time
 import threading
 from core.autotrader import Autotrader
 from config import MARGEN_MINIMO_DEFECTO, SPREAD_DEFECTO
 
-app = Flask(__name__)
+base_dir = os.path.abspath(os.path.dirname(__file__))
+app = Flask(__name__, template_folder=os.path.join(base_dir, 'templates'))
+
 
 # Instancia global del Autotrader
 autotrader = Autotrader(margen_minimo=MARGEN_MINIMO_DEFECTO)
