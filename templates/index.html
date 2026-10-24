@@ -15,7 +15,7 @@
         .btn-action { background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.9rem; padding: 2px 6px; }
         .btn-action:hover { color: #ef4444; }
 
-        .iframe-container { width: 100%; height: 380px; background: #020617; border-radius: 6px; overflow: hidden; border: 1px solid #1e293b; }
+        .iframe-container { width: 100%; height: 420px; background: #020617; border-radius: 6px; overflow: hidden; border: 1px solid #1e293b; }
         iframe { width: 100%; height: 100%; border: none; }
 
         /* Modal */
@@ -41,11 +41,11 @@
             <h3 style="margin-top: 0; color: #f8fafc; font-size: 0.95rem;">Seleccionar Panel</h3>
             <select id="select-servicio">
                 <optgroup label="VES">
-                    <option value="Pago Móvil|VES">📱 Pago Móvil | VES</option>
+                    <option value="Pago móvil|VES">📱 Pago móvil | VES</option>
                     <option value="Banesco|VES">🏦 Banesco | VES</option>
                     <option value="Bancamiga|VES">🏦 Bancamiga | VES</option>
                     <option value="BNC|VES">🏦 BNC | VES</option>
-                    <option value="Venezuela|VES">🏦 Venezuela | VES</option>
+                    <option value="Banco de Venezuela|VES">🏦 Banco de Venezuela | VES</option>
                     <option value="Mercantil|VES">🏦 Mercantil | VES</option>
                     <option value="Provincial|VES">🏦 Provincial | VES</option>
                 </optgroup>
@@ -62,8 +62,8 @@
     <script>
         // Lista inicial de paneles activos
         let panelesActivos = [
-            { id: 1, servicio: "Pago Móvil", moneda: "VES" },
-            { id: 2, servicio: "Venezuela", moneda: "VES" }
+            { id: 1, servicio: "Pago móvil", moneda: "VES" },
+            { id: 2, servicio: "Banco de Venezuela", moneda: "VES" }
         ];
 
         function renderPaneles() {
@@ -79,8 +79,8 @@
                 const card = document.createElement('div');
                 card.className = 'card';
 
-                // URL del explorador configurada para pasar el término de búsqueda
-                const urlExplorer = `https://explorer.syklo.io/?search=${encodeURIComponent(p.servicio)}`;
+                // URL del explorador con el parámetro hash para automatizar la selección en el content.js
+                const urlExplorer = `https://explorer.syklo.io/#${encodeURIComponent(p.servicio)}`;
 
                 card.innerHTML = `
                     <div class="card-header">
