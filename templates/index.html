@@ -16,11 +16,9 @@
         th, td { padding: 5px; border-bottom: 1px solid #1e293b; }
         th { color: #94a3b8; }
         .btn-action { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.9rem; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: #1e293b; padding: 20px; border-radius: 8px; width: 90%; max-width: 300px; text-align: center; }
         select, button { width: 100%; padding: 8px; margin-top: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; }
-        .iframe-container { width: 100%; height: 500px; border-radius: 6px; overflow: hidden; background: #fff; }
-        .iframe-container iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
@@ -32,9 +30,7 @@
     </div>
 
     <!-- Contenedor Dinámico de Paneles -->
-    <div id="paneles-container">
-        <!-- Los paneles se cargarán aquí -->
-    </div>
+    <div id="paneles-container"></div>
 
     <!-- Modal para Agregar Servicio -->
     <div id="modal-servicio" class="modal">
@@ -43,10 +39,10 @@
             <select id="select-servicio">
                 <option value="Pago Móvil|VES">Pago Móvil VES</option>
                 <option value="Banco de Venezuela|VES">Banco de Venezuela VES</option>
-                <option value="Syklo Web|Navegador">🌐 Syklo (Navegador Interno)</option>
+                <option value="Syklo Web|Navegador">🌐 Acceso Directo Syklo</option>
             </select>
-            <button style="background: #0284c7; border: none; font-weight: bold; cursor: pointer;" onclick="agregarPanel()">Agregar</button>
-            <button style="background: #ef4444; border: none; font-weight: bold; cursor: pointer;" onclick="cerrarModal()">Cancelar</button>
+            <button style="background: #0284c7; font-weight: bold; cursor: pointer;" onclick="agregarPanel()">Agregar</button>
+            <button style="background: #ef4444; font-weight: bold; cursor: pointer;" onclick="cerrarModal()">Cancelar</button>
         </div>
     </div>
 
@@ -60,33 +56,22 @@
             const container = document.getElementById('paneles-container');
             container.innerHTML = '';
             
-            if (panelesActivos.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;">No hay paneles activos.</div>';
-                return;
-            }
-
             panelesActivos.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'card';
 
-                        if (p.servicio === "Syklo Web") {
-            // Renderizar tarjeta con botón de acceso directo seguro
-            card.innerHTML = `
-                <div class="card-header">
-                    <span>🌐 Acceso Directo Syklo</span>
-                    <div>
-                        <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
-                    </div>
-                </div>
-                <div style="padding: 25px 15px; text-align: center;">
-                    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px;">La plataforma actualizó sus seguridad y bloquea los marcos internos. Haz clic abajo para abrirla:</p>
-                    <a href="https://share.google/jQ8y4EIGsGtg14EDq" target="_blank" style="background: #10b981; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 0.9rem;">Abrir Syklo Oficial 🚀</a>
-                </div>
-            `;
-            container.appendChild(card);
-        }
-
-                    // Renderizar panel de tabla de precios normal
+                if (p.servicio === "Syklo Web") {
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span>🌐 Acceso Directo Syklo</span>
+                            <div><button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button></div>
+                        </div>
+                        <div style="padding: 15px; text-align: center;">
+                            <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 10px;">Abre la plataforma oficial de forma segura:</p>
+                            <a href="https://share.google/jQ8y4EIGsGtg14EDq" target="_blank" style="background: #10b981; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 0.85rem;">Abrir Syklo 🚀</a>
+                        </div>
+                    `;
+                } else {
                     card.innerHTML = `
                         <div class="card-header">
                             <span>📱 ${p.servicio} | ${p.moneda}</span>
@@ -97,7 +82,7 @@
                         </div>
                         <div class="table-container">
                             <table>
-                               <thead>
+                                <thead>
                                     <tr>
                                         <th>Orden</th>
                                         <th>Precio</th>
@@ -112,9 +97,9 @@
                             </table>
                         </div>
                     `;
-                    container.appendChild(card);
                     cargarDatosPanel(p.id, p.servicio);
                 }
+                container.appendChild(card);
             });
         }
 
@@ -143,11 +128,20 @@
                 });
         }
 
-        function abrirModal() { document.getElementById('modal-servicio').style.display = 'flex'; }
-        function cerrarModal() { document.getElementById('modal-servicio').style.display = 'none'; }
+        function abrirModal() { 
+            const modal = document.getElementById('modal-servicio');
+            if(modal) modal.style.display = 'flex'; 
+        }
+
+        function cerrarModal() { 
+            const modal = document.getElementById('modal-servicio');
+            if(modal) modal.style.display = 'none'; 
+        }
         
         function agregarPanel() {
-            const val = document.getElementById('select-servicio').value.split('|');
+            const select = document.getElementById('select-servicio');
+            if(!select) return;
+            const val = select.value.split('|');
             const nuevoId = panelesActivos.length > 0 ? Math.max(...panelesActivos.map(p => p.id)) + 1 : 1;
             panelesActivos.push({ id: nuevoId, servicio: val[0], moneda: val[1] });
             cerrarModal();
