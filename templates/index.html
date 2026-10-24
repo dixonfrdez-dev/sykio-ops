@@ -35,11 +35,11 @@
     <!-- Modal para Agregar Servicio -->
     <div id="modal-servicio" class="modal">
         <div class="modal-content">
-            <h3>Seleccionar Panel</h3>
+            <h3 style="margin-top: 0; color: #e2e8f0;">Seleccionar Panel</h3>
             <select id="select-servicio">
-                <option value="Pago Móvil|VES">Pago Móvil VES</option>
-                <option value="Banco de Venezuela|VES">Banco de Venezuela VES</option>
-                <option value="Syklo Web|Navegador">🌐 Acceso Directo Syklo</option>
+                <option value="Pago Móvil|VES">📱 Pago Móvil VES</option>
+                <option value="Banco de Venezuela|VES">🏦 Banco de Venezuela VES</option>
+                <option value="Syklo Explorer|Navegador">📊 Explorador Syklo (Precios)</option>
             </select>
             <button style="background: #0284c7; font-weight: bold; cursor: pointer;" onclick="agregarPanel()">Agregar</button>
             <button style="background: #ef4444; font-weight: bold; cursor: pointer;" onclick="cerrarModal()">Cancelar</button>
@@ -49,7 +49,7 @@
     <script>
         let panelesActivos = [
             { id: 1, servicio: "Pago Móvil", moneda: "VES" },
-            { id: 2, servicio: "Syklo Web", moneda: "Navegador" }
+            { id: 2, servicio: "Syklo Explorer", moneda: "Navegador" }
         ];
 
         function renderPaneles() {
@@ -60,15 +60,16 @@
                 const card = document.createElement('div');
                 card.className = 'card';
 
-                if (p.servicio === "Syklo Web") {
+                if (p.servicio === "Syklo Explorer" || p.servicio === "Syklo Web") {
                     card.innerHTML = `
                         <div class="card-header">
-                            <span>🌐 Acceso Directo Syklo</span>
-                            <div><button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button></div>
+                            <span>📊 Explorador de Precios (Syklo)</span>
+                            <div>
+                                <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
+                            </div>
                         </div>
-                        <div style="padding: 15px; text-align: center;">
-                            <p style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 10px;">Abre la plataforma oficial de forma segura:</p>
-                            <a href="https://share.google/jQ8y4EIGsGtg14EDq" target="_blank" style="background: #10b981; color: white; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 0.85rem;">Abrir Syklo 🚀</a>
+                        <div class="iframe-container" style="width: 100%; height: 450px; background: #0f172a; border-radius: 6px; overflow: hidden;">
+                            <iframe src="https://explorer.syklo.io/" style="width: 100%; height: 100%; border: none;"></iframe>
                         </div>
                     `;
                 } else {
@@ -110,7 +111,7 @@
                     const tbody = document.getElementById(`tabla-${id}`);
                     if(!tbody) return;
                     tbody.innerHTML = '';
-                    if (data.success && data.ordenes.length > 0) {
+                    if (data.success && data.ordenes && data.ordenes.length > 0) {
                         data.ordenes.forEach(o => {
                             const tr = document.createElement('tr');
                             tr.innerHTML = `
@@ -125,6 +126,10 @@
                     } else {
                         tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Sin órdenes disponibles</td></tr>`;
                     }
+                })
+                .catch(() => {
+                    const tbody = document.getElementById(`tabla-${id}`);
+                    if(tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ef4444;">Error al cargar datos</td></tr>`;
                 });
         }
 
@@ -149,7 +154,7 @@
         }
 
         function eliminarPanel(id) {
-            if(confirm("¿Eliminar este panel?")) {
+            if(confirm("¿Deseas quitar este panel?")) {
                 panelesActivos = panelesActivos.filter(p => p.id !== id);
                 renderPaneles();
             }
@@ -157,7 +162,7 @@
 
         function recargarPanel(id) {
             const p = panelesActivos.find(item => item.id === id);
-            if(p && p.servicio !== "Syklo Web") cargarDatosPanel(p.id, p.servicio);
+            if(p && p.servicio !== "Syklo Explorer" && p.servicio !== "Syklo Web") cargarDatosPanel(p.id, p.servicio);
         }
 
         document.addEventListener('DOMContentLoaded', renderPaneles);
