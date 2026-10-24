@@ -69,22 +69,23 @@
                 const card = document.createElement('div');
                 card.className = 'card';
 
-                if (p.servicio === "Syklo Web") {
-                    // Renderizar panel con navegador interno (iframe)
-                    card.innerHTML = `
-                        <div class="card-header">
-                            <span>🌐 Syklo (Navegador Integrado)</span>
-                            <div>
-                                <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
-                            </div>
-                        </div>
-                        <div class="iframe-container">
-                            <iframe src="https://share.google/jQ8y4EIGsGtg14EDq"></iframe>
+                        if (p.servicio === "Syklo Web") {
+            // Renderizar tarjeta con botón de acceso directo seguro
+            card.innerHTML = `
+                <div class="card-header">
+                    <span>🌐 Acceso Directo Syklo</span>
+                    <div>
+                        <button class="btn-action" onclick="eliminarPanel(${p.id})">❌</button>
+                    </div>
+                </div>
+                <div style="padding: 25px 15px; text-align: center;">
+                    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px;">La plataforma actualizó sus seguridad y bloquea los marcos internos. Haz clic abajo para abrirla:</p>
+                    <a href="https://share.google/jQ8y4EIGsGtg14EDq" target="_blank" style="background: #10b981; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 0.9rem;">Abrir Syklo Oficial 🚀</a>
+                </div>
+            `;
+            container.appendChild(card);
+        }
 
-                        </div>
-                    `;
-                    container.appendChild(card);
-                } else {
                     // Renderizar panel de tabla de precios normal
                     card.innerHTML = `
                         <div class="card-header">
