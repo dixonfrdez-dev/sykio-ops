@@ -1,0 +1,70 @@
+ <!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Syklo Monitor & AutoTrader</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+    .container { max-width: 1000px; margin: auto; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+    .card { background: #1e293b; border-radius: 10px; padding: 20px; border: 1px solid #334155; }
+    .price { font-size: 2rem; font-weight: bold; color: #38bdf8; margin: 10px 0; }
+    input, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; box-sizing: border-box; }
+    button { background: #2563eb; font-weight: bold; cursor: pointer; border: none; }
+    button:hover { background: #1d4ed8; }
+    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: #16a34a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Syklo Ops Monitor <span class="status-badge" id="botStatus">Conectado</span></h1>
+    
+    <div class="grid">
+      <!-- Tarjeta de Mercado -->
+      <div class="card">
+        <h3>Mejor Tasa de Compra</h3>
+        <div class="price" id="buyRate">--.--</div>
+        <p>Actualizado: <span id="lastUpdated">En espera...</span></p>
+      </div>
+
+      <!-- Tarjeta de Venta -->
+      <div class="card">
+        <h3>Mejor Tasa de Venta</h3>
+        <div class="price" id="sellRate">--.--</div>
+        <p>Margen de mercado: <span id="marketSpread">0.00%</span></p>
+      </div>
+
+      <!-- Configuración AutoTrader -->
+      <div class="card">
+        <h3>Configuración de AutoTrader</h3>
+        <label>Margen deseado (%):</label>
+        <input type="number" id="targetMargin" step="0.1" value="1.5">
+        <label>Precio mínimo de venta:</label>
+        <input type="number" id="minSellPrice" step="0.01" value="0.00">
+        <button id="saveConfig">Guardar Parámetros</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Recibir datos enviados desde la extensión
+    window.addEventListener("message", (event) => {
+      if (event.data?.type === "SYKLO_PRICE_UPDATE") {
+        document.getElementById("buyRate").textContent = event.data.buy;
+        document.getElementById("sellRate").textContent = event.data.sell;
+        document.getElementById("lastUpdated").textContent = new Date().toLocaleTimeString();
+      }
+    });
+
+    document.getElementById("saveConfig").addEventListener("click", () => {
+      const config = {
+        margin: parseFloat(document.getElementById("targetMargin").value),
+        minSell: parseFloat(document.getElementById("minSellPrice").value)
+      };
+      // Enviar configuración a la extensión
+      window.postMessage({ type: "SAVE_BOT_CONFIG", config }, "*");
+      alert("Parámetros guardados.");
+    });
+  </script>
+</body>
+</html>
