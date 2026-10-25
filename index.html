@@ -3,155 +3,171 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Syklo Ops Monitor & Control</title>
+  <title>Syklo Trading Workstation Pro</title>
   <style>
-    :root {
-      --bg-primary: #0b1120;
-      --bg-card: #1e293b;
-      --accent: #38bdf8;
-      --accent-green: #22c55e;
-      --accent-red: #ef4444;
-      --border: #334155;
-      --text: #f8fafc;
-      --text-dim: #94a3b8;
-    }
-
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg-primary); color: var(--text); padding: 24px; min-height: 100vh; }
-    .container { max-width: 1100px; margin: auto; }
+    body { background: #0b1120; color: #f8fafc; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
     
-    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
-    .title-group { display: flex; align-items: center; gap: 12px; }
-    .status-badge { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
-    .status-badge.offline { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); border-color: var(--accent-red); }
+    header { background: #1e293b; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; }
+    .brand { font-size: 1.1rem; font-weight: bold; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+    .badge { background: #16a34a; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-    .card { background: var(--bg-card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; }
-    .card h3 { font-size: 0.95rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+    /* Contenedor dividido en 2 columnas */
+    .workspace { display: flex; flex: 1; height: calc(100vh - 53px); }
     
-    .rate-val { font-size: 2.2rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
-    .meta-text { font-size: 0.85rem; color: var(--text-dim); }
-
-    .form-group { margin-bottom: 14px; }
-    label { display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-dim); }
-    input, select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: var(--text); font-size: 0.95rem; outline: none; }
-    input:focus { border-color: var(--accent); }
-
-    .btn { background: #2563eb; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; width: 100%; margin-top: 8px; }
+    /* Panel izquierdo: Controles y tabla de tasas */
+    .sidebar { width: 380px; background: #0f172a; border-right: 1px solid #334155; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+    .card { background: #1e293b; border-radius: 8px; padding: 14px; border: 1px solid #334155; }
+    .card h3 { font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px; }
+    
+    .input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    input, select { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #334155; background: #0b1120; color: #fff; font-size: 0.85rem; outline: none; }
+    input:focus { border-color: #38bdf8; }
+    
+    .btn { background: #2563eb; color: #fff; padding: 8px 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
     .btn:hover { background: #1d4ed8; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover { background: #dc2626; }
 
-    .log-box { background: #0f172a; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.8rem; max-height: 140px; overflow-y: auto; color: var(--text-dim); border: 1px solid var(--border); margin-top: 10px; }
-    .log-entry { margin-bottom: 4px; }
-    .log-entry.success { color: var(--accent-green); }
+    /* Tabla de Tasas Configuradas */
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; }
+    th { color: #94a3b8; padding: 6px; border-bottom: 1px solid #334155; }
+    td { padding: 8px 6px; border-bottom: 1px solid #1e293b; }
+    .rate-badge { color: #38bdf8; font-weight: bold; }
+
+    /* Panel derecho: Visor integrado de Syklo */
+    .frame-container { flex: 1; background: #020617; position: relative; }
+    iframe { width: 100%; height: 100%; border: none; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="title-group">
-        <h1>Syklo Monitor & Ops</h1>
-        <span class="status-badge" id="extStatus">Extensión en espera</span>
-      </div>
-      <div class="meta-text" id="clock">--:--:--</div>
-    </header>
+  <header>
+    <div class="brand">
+      ⚡ Syklo Trading Desk
+      <span class="badge" id="syncStatus">Extensión Enlazada</span>
+    </div>
+    <div>
+      <button class="btn" id="reloadFrameBtn" style="padding: 4px 10px; font-size: 0.75rem;">🔄 Recargar Syklo</button>
+    </div>
+  </header>
 
-    <div class="grid">
-      <!-- Tarjeta Compra -->
+  <div class="workspace">
+    <!-- Panel Izquierdo -->
+    <div class="sidebar">
+      
+      <!-- Agregar nueva regla de tasa -->
       <div class="card">
-        <div>
-          <h3>Mejor Tasa de Compra (P2P)</h3>
-          <div class="rate-val" id="buyPrice">0.00</div>
-          <p class="meta-text">Referencia de entrada</p>
+        <h3>+ Monitorear Nueva Tasa</h3>
+        <div class="input-row">
+          <input type="text" id="pairName" placeholder="Ej: COP / USDC">
+          <input type="number" id="targetRate" step="0.01" placeholder="Tasa Ref">
         </div>
-        <div class="meta-text">Último cambio: <span id="buyTime">--</span></div>
-      </div>
-
-      <!-- Tarjeta Venta -->
-      <div class="card">
-        <div>
-          <h3>Mejor Tasa de Venta (P2P)</h3>
-          <div class="rate-val" id="sellPrice">0.00</div>
-          <p class="meta-text">Margen de mercado (Spread): <b id="spreadVal">0.00%</b></p>
+        <div class="input-row">
+          <input type="number" id="alertMargin" step="0.1" placeholder="Margen (%)" value="1.2">
+          <button class="btn" id="addRateBtn">Agregar</button>
         </div>
-        <div class="meta-text">Último cambio: <span id="sellTime">--</span></div>
       </div>
 
-      <!-- Tarjeta AutoTrader -->
-      <div class="card">
-        <div>
-          <h3>Ajuste Automático de Órdenes</h3>
-          <div class="form-group">
-            <label for="marginInput">Margen deseado sobre mejor compra (%):</label>
-            <input type="number" id="marginInput" step="0.1" value="1.2">
-          </div>
-          <div class="form-group">
-            <label for="minPriceInput">Precio mínimo de protección:</label>
-            <input type="number" id="minPriceInput" step="0.01" value="1.00">
-          </div>
-        </div>
-        <button class="btn" id="saveParamsBtn">Guardar Parámetros</button>
+      <!-- Tabla de Tasas a Seguir -->
+      <div class="card" style="flex: 1;">
+        <h3>Tasas en Monitoreo</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Par</th>
+              <th>Tasa Obj</th>
+              <th>Margen</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="ratesTableBody">
+            <!-- Filas dinámicas -->
+          </tbody>
+        </table>
       </div>
+
+      <!-- Parámetros del AutoTrader -->
+      <div class="card">
+        <h3>Ajuste Automático</h3>
+        <label style="font-size: 0.75rem; color: #94a3b8;">Precio Mínimo de Seguridad:</label>
+        <input type="number" id="safetyMin" step="0.01" value="1.00" style="margin: 6px 0 10px 0;">
+        <button class="btn" id="saveAutoTraderBtn" style="width: 100%;">Activar AutoTrader</button>
+      </div>
+
     </div>
 
-    <!-- Registro de Actividad -->
-    <div style="margin-top: 24px;">
-      <h3 style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 8px;">REGISTRO DE EVENTOS</h3>
-      <div class="log-box" id="logContainer">
-        <div class="log-entry">[Sistema] Esperando enlace con la extensión de Chrome...</div>
-      </div>
+    <!-- Panel Derecho: Syklo WebApp -->
+    <div class="frame-container">
+      <iframe id="sykloFrame" src="https://webapp.syklo.io/"></iframe>
     </div>
   </div>
 
   <script>
-    // Reloj
-    setInterval(() => {
-      document.getElementById('clock').textContent = new Date().toLocaleTimeString();
-    }, 1000);
+    let monitoredRates = JSON.parse(localStorage.getItem("syklo_monitored_rates") || "[]");
 
-    function addLog(msg, type = '') {
-      const box = document.getElementById('logContainer');
-      const div = document.createElement('div');
-      div.className = `log-entry ${type}`;
-      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
+    function renderRates() {
+      const tbody = document.getElementById("ratesTableBody");
+      tbody.innerHTML = "";
+      
+      if (monitoredRates.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="color:#64748b; text-align:center; padding:12px;">Sin tasas configuradas</td></tr>`;
+        return;
+      }
+
+      monitoredRates.forEach((item, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><b>${item.pair}</b></td>
+          <td class="rate-badge">${item.target}</td>
+          <td>${item.margin}%</td>
+          <td><button class="btn btn-danger" style="padding:2px 6px; font-size:0.7rem;" onclick="removeRate(${index})">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
-    // Comunicación bidireccional con la extensión
-    window.addEventListener("message", (event) => {
-      if (!event.data || typeof event.data !== "object") return;
+    window.removeRate = function(index) {
+      monitoredRates.splice(index, 1);
+      localStorage.setItem("syklo_monitored_rates", JSON.stringify(monitoredRates));
+      renderRates();
+      syncWithExtension();
+    };
 
-      // Actualización de tasas recibida desde content.js
-      if (event.data.type === "SYKLO_RATES_SYNC") {
-        const { buy, sell } = event.data;
-        document.getElementById("buyPrice").textContent = buy || "--";
-        document.getElementById("sellPrice").textContent = sell || "--";
-        document.getElementById("buyTime").textContent = new Date().toLocaleTimeString();
-        document.getElementById("sellTime").textContent = new Date().toLocaleTimeString();
+    document.getElementById("addRateBtn").addEventListener("click", () => {
+      const pair = document.getElementById("pairName").value.trim() || "P2P Tasa";
+      const target = parseFloat(document.getElementById("targetRate").value) || 0;
+      const margin = parseFloat(document.getElementById("alertMargin").value) || 1.0;
 
-        if (buy && sell && buy > 0) {
-          const spread = (((sell - buy) / buy) * 100).toFixed(2);
-          document.getElementById("spreadVal").textContent = `${spread}%`;
-        }
+      if (target <= 0) return alert("Ingresa una tasa válida");
 
-        const badge = document.getElementById("extStatus");
-        badge.textContent = "Extensión Conectada";
-        badge.classList.remove("offline");
+      monitoredRates.push({ pair, target, margin });
+      localStorage.setItem("syklo_monitored_rates", JSON.stringify(monitoredRates));
+      renderRates();
+      syncWithExtension();
 
-        addLog(`Tasas recibidas: Compra=${buy} | Venta=${sell}`, 'success');
-      }
+      document.getElementById("pairName").value = "";
+      document.getElementById("targetRate").value = "";
     });
 
-    // Guardar configuración y enviarla al content script de la extensión
-    document.getElementById("saveParamsBtn").addEventListener("click", () => {
-      const config = {
-        margin: parseFloat(document.getElementById("marginInput").value) || 0,
-        minPrice: parseFloat(document.getElementById("minPriceInput").value) || 0
-      };
+    function syncWithExtension() {
+      const safetyMin = parseFloat(document.getElementById("safetyMin").value) || 1.0;
+      window.postMessage({
+        type: "SYKLO_UPDATE_RULES",
+        rules: monitoredRates,
+        safetyMin: safetyMin
+      }, "*");
+    }
 
-      window.postMessage({ type: "SYKLO_CONFIG_UPDATE", config }, "*");
-      addLog(`Configuración enviada: Margen=${config.margin}%, Min=${config.minPrice}`);
+    document.getElementById("saveAutoTraderBtn").addEventListener("click", () => {
+      syncWithExtension();
+      alert("Parámetros y reglas enviadas al AutoTrader.");
     });
+
+    document.getElementById("reloadFrameBtn").addEventListener("click", () => {
+      document.getElementById("sykloFrame").src = "https://webapp.syklo.io/";
+    });
+
+    renderRates();
   </script>
 </body>
 </html>
