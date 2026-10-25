@@ -1,69 +1,156 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Syklo Monitor & AutoTrader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Syklo Ops Monitor & Control</title>
   <style>
-    body { font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-    .container { max-width: 1000px; margin: auto; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
-    .card { background: #1e293b; border-radius: 10px; padding: 20px; border: 1px solid #334155; }
-    .price { font-size: 2rem; font-weight: bold; color: #38bdf8; margin: 10px 0; }
-    input, button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; box-sizing: border-box; }
-    button { background: #2563eb; font-weight: bold; cursor: pointer; border: none; }
-    button:hover { background: #1d4ed8; }
-    .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: #16a34a; }
+    :root {
+      --bg-primary: #0b1120;
+      --bg-card: #1e293b;
+      --accent: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg-primary); color: var(--text); padding: 24px; min-height: 100vh; }
+    .container { max-width: 1100px; margin: auto; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .title-group { display: flex; align-items: center; gap: 12px; }
+    .status-badge { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+    .status-badge.offline { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); border-color: var(--accent-red); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .card { background: var(--bg-card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; }
+    .card h3 { font-size: 0.95rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+    
+    .rate-val { font-size: 2.2rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+    .meta-text { font-size: 0.85rem; color: var(--text-dim); }
+
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-dim); }
+    input, select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: #0f172a; color: var(--text); font-size: 0.95rem; outline: none; }
+    input:focus { border-color: var(--accent); }
+
+    .btn { background: #2563eb; color: #fff; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; width: 100%; margin-top: 8px; }
+    .btn:hover { background: #1d4ed8; }
+
+    .log-box { background: #0f172a; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 0.8rem; max-height: 140px; overflow-y: auto; color: var(--text-dim); border: 1px solid var(--border); margin-top: 10px; }
+    .log-entry { margin-bottom: 4px; }
+    .log-entry.success { color: var(--accent-green); }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Syklo Ops Monitor <span class="status-badge" id="botStatus">Conectado</span></h1>
-    
+    <header>
+      <div class="title-group">
+        <h1>Syklo Monitor & Ops</h1>
+        <span class="status-badge" id="extStatus">Extensión en espera</span>
+      </div>
+      <div class="meta-text" id="clock">--:--:--</div>
+    </header>
+
     <div class="grid">
-      <!-- Tarjeta de Mercado -->
+      <!-- Tarjeta Compra -->
       <div class="card">
-        <h3>Mejor Tasa de Compra</h3>
-        <div class="price" id="buyRate">--.--</div>
-        <p>Actualizado: <span id="lastUpdated">En espera...</span></p>
+        <div>
+          <h3>Mejor Tasa de Compra (P2P)</h3>
+          <div class="rate-val" id="buyPrice">0.00</div>
+          <p class="meta-text">Referencia de entrada</p>
+        </div>
+        <div class="meta-text">Último cambio: <span id="buyTime">--</span></div>
       </div>
 
-      <!-- Tarjeta de Venta -->
+      <!-- Tarjeta Venta -->
       <div class="card">
-        <h3>Mejor Tasa de Venta</h3>
-        <div class="price" id="sellRate">--.--</div>
-        <p>Margen de mercado: <span id="marketSpread">0.00%</span></p>
+        <div>
+          <h3>Mejor Tasa de Venta (P2P)</h3>
+          <div class="rate-val" id="sellPrice">0.00</div>
+          <p class="meta-text">Margen de mercado (Spread): <b id="spreadVal">0.00%</b></p>
+        </div>
+        <div class="meta-text">Último cambio: <span id="sellTime">--</span></div>
       </div>
 
-      <!-- Configuración AutoTrader -->
+      <!-- Tarjeta AutoTrader -->
       <div class="card">
-        <h3>Configuración de AutoTrader</h3>
-        <label>Margen deseado (%):</label>
-        <input type="number" id="targetMargin" step="0.1" value="1.5">
-        <label>Precio mínimo de venta:</label>
-        <input type="number" id="minSellPrice" step="0.01" value="0.00">
-        <button id="saveConfig">Guardar Parámetros</button>
+        <div>
+          <h3>Ajuste Automático de Órdenes</h3>
+          <div class="form-group">
+            <label for="marginInput">Margen deseado sobre mejor compra (%):</label>
+            <input type="number" id="marginInput" step="0.1" value="1.2">
+          </div>
+          <div class="form-group">
+            <label for="minPriceInput">Precio mínimo de protección:</label>
+            <input type="number" id="minPriceInput" step="0.01" value="1.00">
+          </div>
+        </div>
+        <button class="btn" id="saveParamsBtn">Guardar Parámetros</button>
+      </div>
+    </div>
+
+    <!-- Registro de Actividad -->
+    <div style="margin-top: 24px;">
+      <h3 style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 8px;">REGISTRO DE EVENTOS</h3>
+      <div class="log-box" id="logContainer">
+        <div class="log-entry">[Sistema] Esperando enlace con la extensión de Chrome...</div>
       </div>
     </div>
   </div>
 
   <script>
-    // Recibir datos enviados desde la extensión
+    // Reloj
+    setInterval(() => {
+      document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+    }, 1000);
+
+    function addLog(msg, type = '') {
+      const box = document.getElementById('logContainer');
+      const div = document.createElement('div');
+      div.className = `log-entry ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // Comunicación bidireccional con la extensión
     window.addEventListener("message", (event) => {
-      if (event.data?.type === "SYKLO_PRICE_UPDATE") {
-        document.getElementById("buyRate").textContent = event.data.buy;
-        document.getElementById("sellRate").textContent = event.data.sell;
-        document.getElementById("lastUpdated").textContent = new Date().toLocaleTimeString();
+      if (!event.data || typeof event.data !== "object") return;
+
+      // Actualización de tasas recibida desde content.js
+      if (event.data.type === "SYKLO_RATES_SYNC") {
+        const { buy, sell } = event.data;
+        document.getElementById("buyPrice").textContent = buy || "--";
+        document.getElementById("sellPrice").textContent = sell || "--";
+        document.getElementById("buyTime").textContent = new Date().toLocaleTimeString();
+        document.getElementById("sellTime").textContent = new Date().toLocaleTimeString();
+
+        if (buy && sell && buy > 0) {
+          const spread = (((sell - buy) / buy) * 100).toFixed(2);
+          document.getElementById("spreadVal").textContent = `${spread}%`;
+        }
+
+        const badge = document.getElementById("extStatus");
+        badge.textContent = "Extensión Conectada";
+        badge.classList.remove("offline");
+
+        addLog(`Tasas recibidas: Compra=${buy} | Venta=${sell}`, 'success');
       }
     });
 
-    document.getElementById("saveConfig").addEventListener("click", () => {
+    // Guardar configuración y enviarla al content script de la extensión
+    document.getElementById("saveParamsBtn").addEventListener("click", () => {
       const config = {
-        margin: parseFloat(document.getElementById("targetMargin").value),
-        minSell: parseFloat(document.getElementById("minSellPrice").value)
+        margin: parseFloat(document.getElementById("marginInput").value) || 0,
+        minPrice: parseFloat(document.getElementById("minPriceInput").value) || 0
       };
-      // Enviar configuración a la extensión
-      window.postMessage({ type: "SAVE_BOT_CONFIG", config }, "*");
-      alert("Parámetros guardados.");
+
+      window.postMessage({ type: "SYKLO_CONFIG_UPDATE", config }, "*");
+      addLog(`Configuración enviada: Margen=${config.margin}%, Min=${config.minPrice}`);
     });
   </script>
 </body>
