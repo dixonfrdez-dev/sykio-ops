@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Syklo Ops Dashboard v7.5</title>
+    <title>Syklo Ops Dashboard v8.1</title>
     <meta name="theme-color" content="#0f172a"/>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -13,7 +13,7 @@
             --bg-primary: #0f172a; --bg-secondary: #1e293b; --bg-tertiary: #334155;
             --bg-card: #1e293b; --border-color: #334155; --text-primary: #f1f5f9;
             --text-secondary: #94a3b8; --accent-primary: #3b82f6; --accent-danger: #ef4444;
-            --accent-pin: #f59e0b; --accent-green: #10b981;
+            --accent-pin: #f59e0b;
             --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --radius: 8px; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
         }
@@ -31,7 +31,6 @@
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
         
-        /* Grilla de Paneles con iframes para Explorer */
         .panel-grid { display: grid; gap: 16px; padding: 16px; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); min-height: 100px; }
         .grid-panel { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); display: flex; flex-direction: column; min-height: 420px; box-shadow: var(--shadow); transition: border-color 0.2s, transform 0.2s ease-out, box-shadow 0.2s; }
         .grid-panel.pinned { border-left: 4px solid var(--accent-pin); }
@@ -46,17 +45,12 @@
         .panel-content { flex-grow: 1; overflow: hidden; }
         .panel-content iframe { width: 100%; height: 100%; border: none; }
         
+        /* Iframe a pantalla completa para la pestaña de Transacciones */
+        #tab-panel-global iframe { width: 100%; height: calc(100vh - 122px); border: none; display: block; }
+        
         .grid-panel.maximized { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2000; border-radius: 0; }
         body.panel-maximized-active { overflow: hidden; }
 
-        /* Pestaña Transacciones (Lanzador Popup) */
-        .trans-hero-box { text-align: center; max-width: 620px; margin: 60px auto; padding: 36px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); }
-        .trans-hero-box h2 { font-size: 20px; margin-bottom: 8px; }
-        .trans-hero-box p { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
-        .btn-launch-trans { background-color: var(--accent-green); color: white; border: none; padding: 14px 28px; border-radius: var(--radius); font-size: 15px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: background 0.2s; }
-        .btn-launch-trans:hover { background-color: #059669; }
-
-        /* Modal y Estados Vacíos */
         .empty-state { display: none; text-align: center; padding: 40px; color: var(--text-secondary); }
         .empty-state.visible { display: block; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 3000; }
@@ -67,7 +61,7 @@
 <body>
     <div id="app-container">
         <header id="app-header">
-            <div class="logo">Syklo Ops v7.5</div>
+            <div class="logo">Syklo Ops v8.1</div>
             <div class="header-controls"><button id="add-panel-btn"><span>+ Agregar</span></button></div>
         </header>
 
@@ -78,27 +72,21 @@
         </nav>
 
         <main id="content-container">
-            <!-- VES (Iframes de explorer.syklo.io) -->
+            <!-- Pestaña VES -->
             <div id="tab-panel-ves" class="tab-panel active">
                 <div class="panel-grid" id="ves-grid"></div>
                 <div class="empty-state" id="ves-empty-state"><p>No hay paneles de VES agregados.</p></div>
             </div>
 
-            <!-- CRIPTO / USD (Iframes de explorer.syklo.io) -->
+            <!-- Pestaña CRIPTO / USD -->
             <div id="tab-panel-cripto" class="tab-panel">
                 <div class="panel-grid" id="cripto-grid"></div>
                 <div class="empty-state" id="cripto-empty-state"><p>No hay paneles de CRIPTO/USD agregados.</p></div>
             </div>
 
-            <!-- TRANSACCIONES (Subventana Nativa) -->
+            <!-- Pestaña Transacciones (Iframe directo dentro de la página) -->
             <div id="tab-panel-global" class="tab-panel">
-                <div class="trans-hero-box">
-                    <h2>Centro de Operaciones Syklo</h2>
-                    <p>La vista de transacciones y órdenes opera en una subventana independiente para evitar bloqueos de seguridad del navegador.</p>
-                    <button class="btn-launch-trans" onclick="launchSykloApp()">
-                        ⚡ Abrir Syklo Transacciones
-                    </button>
-                </div>
+                <iframe src="https://webapp.syklo.io/transactions"></iframe>
             </div>
         </main>
     </div>
@@ -147,19 +135,6 @@
     </div>
 
     <script>
-    // Lanzador directo sin bloqueos para Syklo Transacciones
-    function launchSykloApp() {
-        const width = 1180;
-        const height = 820;
-        const left = (screen.width - width) / 2;
-        const top = (screen.height - height) / 2;
-        window.open(
-            "https://webapp.syklo.io/transactions",
-            "SykloTransactionsWindow",
-            `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=yes,status=yes`
-        );
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
         const vesGrid = document.getElementById('ves-grid');
         const criptoGrid = document.getElementById('cripto-grid');
@@ -171,7 +146,7 @@
         const cancelBtn = document.getElementById('cancelar-btn');
         const panelOpcionSelect = document.getElementById('panel-opcion');
         
-        const STORAGE_KEY = 'sykloDashboardPanels_v7';
+        const STORAGE_KEY = 'sykloDashboardPanels_v8';
         let allPanels = [];
 
         const ICONS = {
@@ -305,7 +280,7 @@
             });
         };
         
-        // Manejo de Pestañas
+        // Manejador de cambio de Pestañas
         document.querySelectorAll('.tab-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 document.querySelector('.tab-btn.active')?.classList.remove('active');
@@ -315,6 +290,7 @@
             });
         });
 
+        // Controles del Modal
         const showModal = (show) => {
              modalOverlay.style.display = show ? 'flex' : 'none';
              if (show) panelOpcionSelect.selectedIndex = 0;
@@ -335,4 +311,4 @@
     });
     </script>
 </body>
-    </html>
+</html>
