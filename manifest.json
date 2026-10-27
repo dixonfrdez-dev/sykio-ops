@@ -1,0 +1,11 @@
+{
+  "name": "Syklo Ops Mobile",
+  "short_name": "SykloOps",
+  "description": "Bot de monitoreo y auto-trading para Syklo en móvil",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a"
+}
