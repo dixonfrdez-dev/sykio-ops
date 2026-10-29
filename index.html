@@ -1,58 +1,261 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Syklo Ops Mobile</title>
-  <link rel="manifest" href="manifest.json">
-  <style>
-    * { box-sizing: border-box; }
-    body { font-family: sans-serif; background:#0f172a; color:#e2e8f0; padding:16px; margin:0; }
-    h2 { margin-top:0; }
-    .card { background:#1e293b; border-radius:8px; padding:12px; margin-bottom:12px; }
-    button { background:#3b82f6; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer; }
-    button.secondary { background:#475569; }
-    input { width:100%; padding:8px; margin:6px 0; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; }
-    .status { font-weight:bold; }
-    #syklo-frame-wrap { margin-top:10px; }
-    #syklo-frame { width:100%; height:70vh; border:none; border-radius:8px; }
-    #log { max-height:200px; overflow-y:auto; font-size:12px; background:#0f172a; padding:8px; border-radius:6px; }
-    .log-entry { margin-bottom:4px; }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Syklo Ops Dashboard v7.1 (Delay)</title>
+    <meta name="theme-color" content="#0f172a"/>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+   <script src="js/alertas.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <style>
+        :root {
+            --bg-primary: #0f172a; --bg-secondary: #1e293b; --bg-tertiary: #334155;
+            --bg-card: #1e293b; --border-color: #334155; --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8; --accent-primary: #3b82f6; --accent-danger: #ef4444;
+            --accent-pin: #f59e0b;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --radius: 8px; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--font-family); background-color: var(--bg-primary); color: var(--text-primary); }
+        #app-container { display: flex; flex-direction: column; min-height: 100vh; }
+        #app-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
+        .logo { font-size: 18px; font-weight: 700; }
+        .header-controls button { background-color: var(--accent-primary); color: white; border: none; padding: 10px 18px; font-size: 14px; border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        #tab-nav { display: flex; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); padding: 0 20px; gap: 8px; position: sticky; top: 61px; z-index: 999; }
+        .tab-btn { padding: 12px 20px; font-size: 14px; background: transparent; border: none; border-bottom: 3px solid transparent; color: var(--text-secondary); cursor: pointer; }
+        .tab-btn.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        .panel-grid { display: grid; gap: 16px; padding: 16px; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); min-height: 100px; }
+        .grid-panel { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); display: flex; flex-direction: column; min-height: 400px; box-shadow: var(--shadow); transition: border-color 0.2s, transform 0.2s ease-out, box-shadow 0.2s; }
+        .grid-panel.pinned { border-left: 4px solid var(--accent-pin); }
+        .panel-header { cursor: move; }
+        .sortable-ghost { opacity: 0.4; }
+        
+        /* ANOTACIÓN: Esta es la clase para el indicador visual. Agranda el panel ligeramente. */
+        .panel-primed {
+            transform: scale(1.03);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border-color: var(--accent-primary);
+        }
+
+        .grid-panel.maximized { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2000; border-radius: 0; }
+        body.panel-maximized-active { overflow: hidden; }
+        .panel-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border-color); }
+        .panel-title { font-weight: 600; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .panel-controls { display: flex; gap: 2px; }
+        .panel-controls button { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 6px; display: flex; border-radius: 4px; transition: color 0.2s, background-color 0.2s; }
+        .panel-controls button:hover { background-color: var(--bg-tertiary); color: var(--text-primary); }
+        .panel-controls button.active { color: var(--accent-pin); }
+        .panel-content { flex-grow: 1; overflow: hidden; }
+        .panel-content iframe { width: 100%; height: 100%; border: none; }
+        #tab-panel-global iframe { width: 100%; height: calc(100vh - 122px); border: none; }
+        .empty-state { display: none; text-align: center; padding: 40px; color: var(--text-secondary); }
+        .empty-state.visible { display: block; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 3000; }
+        .modal { background: var(--bg-secondary); border-radius: var(--radius); width: 90%; max-width: 500px; padding: 24px; }
+        @media (max-width: 768px) { .panel-grid { grid-template-columns: 1fr !important; } }
+    </style>
 </head>
 <body>
-  <h2>⚙️ Syklo Ops Mobile</h2>
-
-  <!-- ESTADO DEL BOT -->
-  <div class="card">
-    <strong>Estado del Bot:</strong> <span id="bot-status" class="status">🔴 PAUSADO</span><br><br>
-    <button id="toggle-bot">Activar / Pausar</button>
-  </div>
-
-  <!-- CONFIGURACIÓN -->
-  <div class="card">
-    <strong>Configuración</strong><br>
-    <input id="trader-name" placeholder="Tu nombre de trader">
-    <input id="telegram-token" placeholder="Bot Token">
-    <input id="telegram-chatid" placeholder="Chat ID">
-    <button id="save-config">Guardar</button>
-  </div>
-
-  <!-- SYKLO INTEGRADO -->
-  <div class="card">
-    <strong>🌐 Syklo Explorer</strong><br><br>
-    <button id="toggle-syklo">Mostrar / Ocultar Explorer</button>
-    <div id="syklo-frame-wrap" style="display:none;">
-      <iframe id="syklo-frame" src="https://explorer.syklo.io/"></iframe>
+    <div id="app-container">
+        <header id="app-header"><div class="logo">Syklo Ops v7.1</div><div class="header-controls"><button id="add-panel-btn"><span>Agregar</span></button></div></header>
+        <nav id="tab-nav">
+            <button class="tab-btn active" data-tab="ves">VES</button><button class="tab-btn" data-tab="cripto">CRIPTO / USD</button><button class="tab-btn" data-tab="global">Transacciones</button>
+        </nav>
+        <main id="content-container">
+            <div id="tab-panel-ves" class="tab-panel active"><div class="panel-grid" id="ves-grid"></div><div class="empty-state" id="ves-empty-state"><p>No hay paneles de VES.</p></div></div>
+            <div id="tab-panel-cripto" class="tab-panel"><div class="panel-grid" id="cripto-grid"></div><div class="empty-state" id="cripto-empty-state"><p>No hay paneles de CRIPTO/USD.</p></div></div>
+            <div id="tab-panel-global" class="tab-panel"><iframe src="https://webapp.syklo.io/transactions"></iframe></div>
+        </main>
     </div>
-  </div>
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <h3>Seleccionar Panel</h3>
+            <select id="panel-opcion">
+                <option value="" disabled selected>Elige un servicio...</option>
+                <optgroup label="VES"><option data-category="VES" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=VES:VE:PF&receive_pms=VES:VE:PF">📱 Pago Móvil|VES</option><option data-category="VES" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=VES:VE:VEBN1&receive_pms=VES:VE:VEBN1">🏦 Banesco|VES</option><option data-category="VES" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=VES:VE:VEBN5&receive_pms=VES:VE:VEBN5">🏦 Bancamiga|VES</option><option data-category="VES" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=VES:VE:VEBN29&receive_pms=VES:VE:VEBN29">🏦 BNC|VES</option><option data-category="VES" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=VES:VE:VEBN2&receive_pms=VES:VE:VEBN2">🏦 Venezuela|VES</option><option data-category="VES" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=VES:VE:VEBN15&receive_pms=VES:VE:VEBN15">🏦 Mercantil|VES</option><option data-category="VES" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=VES:VE:VEBN28&receive_pms=VES:VE:VEBN28">🏦 TR Inmediata|VES</option>
+<option data-category="VES" data-url="https://explorer.syklo.io/swap#is_sending=true&receive_pms=VES:VE:UB&send_pms=VES:VE:UB">🏦Ubii|VES</option><option data-category="VES" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=VES:VE:VEBN3&receive_pms=VES:VE:VEBN3">🏦Provincial|VES</option></optgroup>
+                <optgroup label="CRIPTO / USD"><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&receive_pms=USD:ALL:WTE&send_pms=USD:ALL:WTE">💵 Wally|USD</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USD:ALL:ZI&receive_pms=USD:ALL:ZI">💵 Zinli|USD</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USDT:ALL:APPA&receive_pms=USDT:ALL:APPA">🔶 Apolo Pay|USDT</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&receive_pms=USDT:ALL:BYB&send_pms=USDT:ALL:BYB">🟡 Bybit|USDT</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USDT:ALL:C01&receive_pms=USDT:ALL:C01">🟡 Binance Pay|USDT</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USDC:ALL:ME&receive_pms=USDC:ALL:ME">🟡 Meru|USDC</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USDT:ALL:BITG&receive_pms=USDT:ALL:BITG">🟡 Bitget|USDT</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&receive_pms=USDT:ALL:OKX&send_pms=USDT:ALL:OKX">🟡 OKX|USDT</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USD:ALL:GLO&receive_pms=USD:ALL:GLO">🟡 Global66|USD</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&receive_pms=USD:ALL:KON&send_pms=USD:ALL:KON">🟡 Kontigo|USDC</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USD:ALL:PP&receive_pms=USD:ALL:PP">🟡 Paypal|USD</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USDC:ALL:C01&receive_pms=USDC:ALL:C01">💵 Binance Pay|USDC</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&receive_pms=EUR:EU:BN&send_pms=EUR:EU:BN">💵 SEPA|EUR</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USD:ALL:AT&receive_pms=USD:ALL:AT">💵 AirTM|USDC</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USDC:ALL:BYB&receive_pms=USDC:ALL:BYB">💵 Bybit|USDC</option><option data-category="CRIPTO" data-url="https://explorer.syklo.io/swap#is_sending=true&send_pms=USDT:ALL:C03,USDT:ALL:C09,USDT:ALL:C10&receive_pms=USDT:ALL:C09,USDT:ALL:C10,USDT:ALL:C03">💵 Redes|USDT</option></optgroup>
+            </select>
+            <div class="modal-buttons" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 12px;"><button id="cancelar-btn">Cancelar</button><button id="ok-btn">Agregar</button></div>
+        </div>
+    </div>
 
-  <!-- LOG DE ACTIVIDAD -->
-  <div class="card">
-    <strong>📋 Actividad</strong>
-    <div id="log"><div class="log-entry">Esperando actividad...</div></div>
-  </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const vesGrid = document.getElementById('ves-grid');
+        const criptoGrid = document.getElementById('cripto-grid');
+        const vesEmptyState = document.getElementById('ves-empty-state');
+        const criptoEmptyState = document.getElementById('cripto-empty-state');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const addPanelBtn = document.getElementById('add-panel-btn');
+        const okBtn = document.getElementById('ok-btn');
+        const cancelBtn = document.getElementById('cancelar-btn');
+        const panelOpcionSelect = document.getElementById('panel-opcion');
+        
+        const STORAGE_KEY = 'sykloDashboardPanels_v7';
+        let allPanels = [];
 
-  <script src="app.js"></script>
+        const ICONS = {
+            refresh: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>',
+            edit: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>',
+            pin: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>',
+            close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+            maximize: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>',
+            minimize: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>'
+        };
+
+        const saveState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(allPanels));
+        const checkEmptyStates = () => {
+            vesEmptyState.classList.toggle('visible', !allPanels.some(p => p.category === 'VES'));
+            criptoEmptyState.classList.toggle('visible', !allPanels.some(p => p.category === 'CRIPTO'));
+        };
+
+        const createPanelElement = (panel) => {
+            const panelEl = document.createElement('div');
+            panelEl.className = 'grid-panel';
+            panelEl.dataset.id = panel.id;
+            if(panel.pinned) panelEl.classList.add('pinned');
+            panelEl.innerHTML = `<div class="panel-header"><span class="panel-title">${panel.title}</span><div class="panel-controls"><button class="pin-btn" title="Fijar">${ICONS.pin}</button><button class="refresh-btn" title="Recargar">${ICONS.refresh}</button><button class="edit-btn" title="Editar Nombre">${ICONS.edit}</button><button class="maximize-btn" title="Maximizar">${ICONS.maximize}</button><button class="close-btn" title="Cerrar">${ICONS.close}</button></div></div><div class="panel-content"><iframe src="${panel.url}" loading="lazy"></iframe></div>`;
+            panelEl.querySelector('.close-btn').addEventListener('click', (e) => { e.stopPropagation(); removePanel(panel.id); });
+            panelEl.querySelector('.maximize-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleMaximizePanel(panel.id); });
+            panelEl.querySelector('.refresh-btn').addEventListener('click', (e) => { e.stopPropagation(); refreshPanel(panel.id); });
+            panelEl.querySelector('.edit-btn').addEventListener('click', (e) => { e.stopPropagation(); editPanelTitle(panel.id); });
+            panelEl.querySelector('.pin-btn').addEventListener('click', (e) => { e.stopPropagation(); togglePinPanel(panel.id); });
+            if(panel.pinned) panelEl.querySelector('.pin-btn').classList.add('active');
+            return panelEl;
+        };
+        
+        const addPanel = (title, url, category) => {
+            const newPanelData = { id: `panel-${Date.now()}`, title, url, category, pinned: false };
+            allPanels.push(newPanelData);
+            const panelEl = createPanelElement(newPanelData);
+            const container = category === 'VES' ? vesGrid : criptoGrid;
+            container.appendChild(panelEl);
+            saveState();
+            checkEmptyStates();
+        };
+
+        const removePanel = (id) => {
+            const panelEl = document.querySelector(`.grid-panel[data-id="${id}"]`);
+            if (panelEl && confirm('¿Eliminar este panel?')) {
+                panelEl.remove();
+                allPanels = allPanels.filter(p => p.id !== id);
+                saveState();
+                checkEmptyStates();
+            }
+        };
+
+        const refreshPanel = (id) => {
+            const iframe = document.querySelector(`.grid-panel[data-id="${id}"] iframe`);
+            if (iframe) iframe.src += '';
+        };
+
+        const editPanelTitle = (id) => {
+            const panelData = allPanels.find(p => p.id === id);
+            const newTitle = prompt('Nuevo nombre para el panel:', panelData.title);
+            if (newTitle && newTitle.trim() !== '') {
+                panelData.title = newTitle.trim();
+                document.querySelector(`.grid-panel[data-id="${id}"] .panel-title`).textContent = panelData.title;
+                saveState();
+            }
+        };
+
+        const togglePinPanel = (id) => {
+            const panelData = allPanels.find(p => p.id === id);
+            const panelEl = document.querySelector(`.grid-panel[data-id="${id}"]`);
+            panelData.pinned = !panelData.pinned;
+            panelEl.classList.toggle('pinned', panelData.pinned);
+            panelEl.querySelector('.pin-btn').classList.toggle('active', panelData.pinned);
+            if (panelData.pinned) {
+                const container = panelData.category === 'VES' ? vesGrid : criptoGrid;
+                container.prepend(panelEl);
+            }
+            saveState();
+        };
+
+        const toggleMaximizePanel = (id) => {
+            const panelEl = document.querySelector(`.grid-panel[data-id="${id}"]`);
+            panelEl.classList.toggle('maximized');
+            document.body.classList.toggle('panel-maximized-active', panelEl.classList.contains('maximized'));
+            const btn = panelEl.querySelector('.maximize-btn');
+            btn.innerHTML = panelEl.classList.contains('maximized') ? ICONS.minimize : ICONS.maximize;
+        };
+
+        const loadState = () => {
+            const savedState = localStorage.getItem(STORAGE_KEY);
+            allPanels = savedState ? JSON.parse(savedState) : [];
+            allPanels.sort((a, b) => (b.pinned || 0) - (a.pinned || 0));
+            vesGrid.innerHTML = '';
+            criptoGrid.innerHTML = '';
+            allPanels.forEach(panelData => {
+                const panelEl = createPanelElement(panelData);
+                const container = panelData.category === 'VES' ? vesGrid : criptoGrid;
+                container.appendChild(panelEl);
+            });
+            checkEmptyStates();
+        };
+
+        const initSortable = () => {
+            [vesGrid, criptoGrid].forEach(gridEl => {
+                new Sortable(gridEl, {
+                    handle: '.panel-header',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    // ANOTACIÓN: Se añaden las nuevas opciones para el delay y el indicador visual.
+                    delay: 300, // Retardo de 300ms
+                    delayOnTouchOnly: true, // El retardo solo aplica en dispositivos táctiles
+                    onChoose: (evt) => {
+                        evt.item.classList.add('panel-primed'); // Añade la clase visual al presionar
+                    },
+                    onUnchoose: (evt) => {
+                        evt.item.classList.remove('panel-primed'); // Quita la clase visual al soltar
+                    },
+                    onEnd: () => {
+                        document.querySelectorAll('.panel-primed').forEach(el => el.classList.remove('panel-primed'));
+                        const orderedPanels = [];
+                        vesGrid.querySelectorAll('.grid-panel').forEach(p => orderedPanels.push(allPanels.find(item => item.id === p.dataset.id)));
+                        criptoGrid.querySelectorAll('.grid-panel').forEach(p => orderedPanels.push(allPanels.find(item => item.id === p.dataset.id)));
+                        allPanels = orderedPanels.filter(p => p);
+                        saveState();
+                    }
+                });
+            });
+        };
+        
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                document.querySelector('.tab-btn.active')?.classList.remove('active');
+                e.target.classList.add('active');
+                document.querySelector('.tab-panel.active')?.classList.remove('active');
+                document.getElementById(`tab-panel-${e.target.dataset.tab}`)?.classList.add('active');
+            });
+        });
+
+        const showModal = (show) => {
+             modalOverlay.style.display = show ? 'flex' : 'none';
+             if (show) panelOpcionSelect.selectedIndex = 0;
+        }
+        addPanelBtn.addEventListener('click', () => showModal(true));
+        cancelBtn.addEventListener('click', () => showModal(false));
+        modalOverlay.addEventListener('click', (e) => { if(e.target === modalOverlay) showModal(false) });
+        
+        okBtn.addEventListener('click', () => {
+            const selected = panelOpcionSelect.options[panelOpcionSelect.selectedIndex];
+            if (!selected || !selected.dataset.url) return;
+            addPanel(selected.text, selected.dataset.url, selected.dataset.category);
+            showModal(false);
+        });
+
+        loadState();
+        initSortable();
+    });
+    </script>
 </body>
 </html>
